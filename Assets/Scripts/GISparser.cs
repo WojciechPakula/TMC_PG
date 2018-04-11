@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Xml.Serialization;
 using UnityEngine;
 
@@ -101,8 +102,22 @@ public static class GISparser {
 
     public static bool fieldChecker(List<Vector2d> points, Vector2d p)
     {
-        //cos
-        return false;
+        bool result = false;
+        int j = points.Count - 1;
+        for (int i = 0; i < points.Count(); i++)
+        {
+            //bardzo ciekawe sprawdzanie pozycji y
+            if (points[i].y < p.y && points[j].y >= p.y || points[j].y < p.y && points[i].y >= p.y)
+            {
+                //rownie ciekawe sprawdzanie pozycji x
+                if (points[i].x + (p.y - points[i].y) / (points[j].y - points[i].y) * (points[j].x - points[i].x) < p.x)
+                {
+                    result = !result;
+                }
+            }
+            j = i;
+        }
+        return result;
     }
 
     //generator płaskiej ziemi
