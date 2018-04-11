@@ -285,6 +285,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4778335747b08144ea74d9492c8c31c7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  planeSize: 0
   cam: {fileID: 1379097368}
 --- !u!4 &1821964939
 Transform:
@@ -411,9 +412,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fbdd8204844fd7e49923dd2c904499aa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  x: 300
-  y: 300
-  wsp: {x: 0.5, y: 0.5}
+  x: 1000
+  y: 1000
+  wsp: {x: 0, y: 0}
 --- !u!212 &1886228863
 SpriteRenderer:
   m_ObjectHideFlags: 0

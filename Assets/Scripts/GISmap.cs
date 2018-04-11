@@ -3,11 +3,26 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class GISmap : MonoBehaviour {
-	// Use this for initialization
+    // Use this for initialization
+    public int planeSize = 0;
 	void Start () {
-
+        setPlaneSize();
+        //tmpsize = planeSize / 2; inaczej to zrobic
     }
 	
+    void setPlaneSize()
+    {
+        int h = cam.pixelHeight;
+        int w = cam.pixelWidth;
+        if (h > w)
+        {
+            planeSize = h;
+        } else
+        {
+            planeSize = w;
+        }
+    }
+
 	// Update is called once per frame
 	void Update () {
 		if (Input.GetKey(KeyCode.W))
@@ -56,7 +71,7 @@ public class GISmap : MonoBehaviour {
     //kamera
     private GameObject ghostPivot = null;   //wirtualny punkt na który patrzy kamera, punkt dotyka mapy.
     private GameObject ghostCamera = null;  //wirtualna kamera która porusza się gwałtownie i prawdziwa kamera jest do niej "dociągana"
-    private float r = 10f;                  //odległość kamery od pivota (zoom)
+    private float r = 100f;                  //odległość kamery od pivota (zoom)
     private float tmpr = 1f;
     private float tmpsize = 5f;
     private float alpha = 89f;              //kąt pomiędzy płaszczyzną mapy, a prostą przechodzącą przez wirtualną kamerę i pivot. 90f to widok od góry.                
@@ -124,12 +139,13 @@ public class GISmap : MonoBehaviour {
     }
 
     void camUpdate()
-    {
+    {        
         if (cam == null)
         {
             Debug.LogError("Błąd, cam = null");
             return;
         }
+        setPlaneSize();
         float moveOffset = MoveVelocity * Time.deltaTime* tmpsize;
         float rotOffset = RotVelocity * Time.deltaTime * tmpRotation;
         float bendOffset = BendVelocity * Time.deltaTime;

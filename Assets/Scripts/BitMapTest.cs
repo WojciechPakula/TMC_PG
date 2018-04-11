@@ -39,8 +39,8 @@ public class BitMapTest : MonoBehaviour {
 
 	// Update is called once per frame
 	void Update () {
-        Sprite newSprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), wsp);
+        //Sprite newSprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), wsp);
 
-        rend.sprite = newSprite;
+        //rend.sprite = newSprite;
     }
 }
