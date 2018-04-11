@@ -2,12 +2,17 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GISdata {
+public class GISdata
+{
     //+jakieś dane o obszerze(xd) 
     //czyli to co jest w węźle bounds w pliku OSM
 
-    public List<GISway> wayContainer;
-    public List<GISnode> nodeContainer;
+    public List<GISway> wayContainer { get; set; }
+    public List<GISnode> nodeContainer { get; set; }
 
-    //coś
+    GISdata()
+    {
+        wayContainer = new List<GISway>();
+        nodeContainer = new List<GISnode>();
+    }
 }
