@@ -5,9 +5,13 @@ using UnityEngine;
 public class GISmap : MonoBehaviour {
     // Use this for initialization
     public int planeSize = 0;
-	void Start () {
+    public float whproportion = 0;
+    MapPlane mapplane;    //tymczasowe
+    int orderCounter = 0;
+    void Start () {
         setPlaneSize();
         //tmpsize = planeSize / 2; inaczej to zrobic
+        setPlane();
     }
 	
     void setPlaneSize()
@@ -17,10 +21,13 @@ public class GISmap : MonoBehaviour {
         if (h > w)
         {
             planeSize = h;
+            whproportion = 1;
         } else
         {
             planeSize = w;
+            whproportion = (float)w / (float)h;
         }
+        
     }
 
 	// Update is called once per frame
@@ -66,6 +73,37 @@ public class GISmap : MonoBehaviour {
             ZoomIn();
         }
         camUpdate();
+        planeUpdate();
+    }
+
+    //mapa
+    public void planeUpdate()
+    {
+        if (
+            ((mapplane.transform.localScale - (Vector3.one * (tmpsize * 2.0f * 100.0f / planeSize) * whproportion)).magnitude >= 0.001) ||
+            ((mapplane.transform.position - ghostPivot.transform.position).magnitude >= tmpsize * 2.0f* whproportion)
+            )
+        {
+            setPlane();
+        }
+    }
+
+    public void setPlane()
+    {
+        var tmp = Resources.Load("Prefabs/GISplane", typeof(GameObject));
+        GameObject go = (GameObject)Instantiate(tmp);
+        go.transform.position = new Vector3(ghostPivot.transform.position.x, 0, ghostPivot.transform.position.z);
+        //go.transform.localScale = Vector3.one * (tmpsize * (float)planeSize / 1000.0f)/2.0f;
+        go.transform.localScale = Vector3.one * (tmpsize * 2.0f * 100.0f / planeSize)* whproportion;
+        var comp = go.GetComponent<MapPlane>();
+        var spr = go.GetComponent<SpriteRenderer>();
+        comp.resolution = new Vector2Int(planeSize, planeSize);
+        //go.transform.rotation.eulerAngles(90,0,0);
+        MapPlane mp = go.GetComponent<MapPlane>();
+        go.transform.parent = this.transform;
+        mapplane = mp;
+        spr.sortingOrder = orderCounter;
+        ++orderCounter;
     }
 
     //kamera
