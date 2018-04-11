@@ -459,7 +459,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   x: 300
-  y: 100
+  y: 300
   wsp: {x: 0.5, y: 0.5}
 --- !u!212 &1886228863
 SpriteRenderer:

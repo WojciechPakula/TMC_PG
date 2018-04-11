@@ -219,7 +219,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\BitMapTest.cs" />
+    <Compile Include="Assets\Scripts\BitMapTest.cs" />
+    <Compile Include="Assets\Scripts\GISdata.cs" />
+    <Compile Include="Assets\Scripts\GISnode.cs" />
+    <Compile Include="Assets\Scripts\GISparser.cs" />
+    <Compile Include="Assets\Scripts\GISway.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="GenerateTargetFrameworkMonikerAttribute" />
