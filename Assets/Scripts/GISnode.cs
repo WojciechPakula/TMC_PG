@@ -8,13 +8,6 @@ public class GISnode
     public long id { get; set; }
     public Vector2d latlon { get; set; }
     public Dictionary<string, string> tags { get; set; }
-
-    public int uid { get; set; }
-    public string user { get; set; }
-
-    public DateTime timestamp { get; set; }
-    public long changeset { get; set; }
-    public int version { get; set; }
     public bool visible { get; set; }
 
     

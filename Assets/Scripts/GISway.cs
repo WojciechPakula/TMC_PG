@@ -8,14 +8,24 @@ public class GISway
     public long id { get; set; }
     public Dictionary<string, string> tags { get; set; }
     public List<GISnode> localNodeContainer { get; set; }
-
-    public int uid { get; set; }
-    public string user { get; set; }
-
-    public DateTime timestamp { get; set; }
-    public long changeset { get; set; }
-    public int version { get; set; }
     public bool visible { get; set; }
+
+    public bool closed
+    {
+        get
+        {
+            if (localNodeContainer != null && localNodeContainer.Count > 0)
+            {
+                GISnode first = localNodeContainer[0];
+                GISnode last = localNodeContainer[localNodeContainer.Count - 1];
+                return first.id == last.id;
+            }
+            else
+            {
+                return false;
+            }
+        }
+    }
 
     GISway(long id = 0)
     {
