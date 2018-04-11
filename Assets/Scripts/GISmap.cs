@@ -13,12 +13,12 @@ public class GISmap : MonoBehaviour {
     //public string path = @"G:\POLITECHNIKA\PROJEKTY\#8 Technologie map cyfrowych\geo3\geo3\TMC_PG\Assets\testowyOSM.osm";
 
     void Start () {
-        gisdata = GISparser.LoadOSM(@"G:\POLITECHNIKA\PROJEKTY\#8 Technologie map cyfrowych\maly.osm");
+        gisdata = GISparser.LoadOSM(@"G:\POLITECHNIKA\PROJEKTY\#8 Technologie map cyfrowych\geo3\geo3\TMC_PG\Assets\testowyOSM.osm");
 
-        gisdata.minLat = 54.3690100;
+        /*gisdata.minLat = 54.3690100;
         gisdata.minLon = 18.6095200;
         gisdata.maxLat = 54.3745700;
-        gisdata.maxLon = 18.6237900;
+        gisdata.maxLon = 18.6237900;*/
 
         setPlaneSize();
         //tmpsize = planeSize / 2; inaczej to zrobic
@@ -101,6 +101,7 @@ public class GISmap : MonoBehaviour {
 
     public void setPlane()
     {
+        //Destroy(mapplane);
         var tmp = Resources.Load("Prefabs/GISplane", typeof(GameObject));
         GameObject go = (GameObject)Instantiate(tmp);
         go.transform.position = new Vector3(ghostPivot.transform.position.x, 0, ghostPivot.transform.position.z);
@@ -117,7 +118,25 @@ public class GISmap : MonoBehaviour {
         ++orderCounter;
 
         //texture
-        comp.fillTexture(GISparser.LatlonToXY(new Vector2d(gisdata.minLat, gisdata.minLon)), GISparser.LatlonToXY(new Vector2d(gisdata.maxLat, gisdata.maxLon)), gisdata);
+        var min = GISparser.LatlonToXY(new Vector2d(gisdata.minLon, gisdata.minLat));
+        var max = GISparser.LatlonToXY(new Vector2d(gisdata.maxLon, gisdata.maxLat));
+
+        var sr = (max - min) / 2;
+
+        sr += max;
+
+        double kat = 0.005;
+        double obszar = kat * tmpsize * 2.0f * whproportion;
+            
+        min = sr - new Vector2d(obszar, obszar);
+        max = sr + new Vector2d(obszar, obszar);
+
+        min += new Vector2d(ghostPivot.transform.position.x* kat * 2.0f, ghostPivot.transform.position.z* kat * 2.0f);
+        max += new Vector2d(ghostPivot.transform.position.x* kat * 2.0f, ghostPivot.transform.position.z* kat * 2.0f);
+
+        comp.fillTexture(min, max, gisdata);
+
+
     }
 
     //kamera

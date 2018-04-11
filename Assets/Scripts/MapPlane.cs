@@ -76,12 +76,17 @@ public class MapPlane : MonoBehaviour {
 
         foreach (var way in data.wayContainer)
         {
+            Color color = randomColor();
             Vector2d pos0 = Vector2d.zero;
             bool first = true;
             foreach (var node in way.localNodeContainer)
             {               
                 var pos1 = GISparser.LatlonToXY(node.latlon);
-                if (first) { first = false; pos0 = pos1; continue; }
+                if (first) {
+                    first = false;
+                    pos0 = pos1;
+                    continue;
+                }
 
                 var pixel0 = XYtoPixel(pos0);
                 var pixel1 = XYtoPixel(pos1);
@@ -116,12 +121,18 @@ public class MapPlane : MonoBehaviour {
                     pixmaxy = pixel0.y + pthick;
                 }
 
+                if (pixminx < 0) pixminx = 0;
+                if (pixminy < 0) pixminy = 0;               
+
+                if (pixmaxx >= resolution.x) pixmaxx = resolution.x;
+                if (pixmaxy >= resolution.y) pixmaxy = resolution.y;
+
                 for (int y = pixminy; y <= pixmaxy; ++y)
                 {
                     for (int x = pixminx; x < pixmaxx; ++x)
                     {
                         bool check = GISparser.lineChecker(pos0, pos1, pixelToXY(new Vector2Int(x,y)), (float)thickness);
-                        if (check) tex.SetPixel(x, y, Color.green);
+                        if (check) tex.SetPixel(x, y, color);
                     }
                 }
                 pos0 = pos1;
