@@ -10,11 +10,14 @@ public class MapPlane : MonoBehaviour {
     SpriteRenderer rend;
     Texture2D tex;
 
-    
+    private void Awake()
+    {
+        rend = GetComponent<SpriteRenderer>();
+    }
 
     // Use this for initialization
     void Start () {
-        rend = GetComponent<SpriteRenderer>();
+        //rend = GetComponent<SpriteRenderer>();
         
 
         /*tex = new Texture2D(resolution.x, resolution.y);
@@ -45,6 +48,7 @@ public class MapPlane : MonoBehaviour {
 
     public void fillTexture(Vector2d min, Vector2d max, GISdata data)
     {
+        rend = GetComponent<SpriteRenderer>();
         tex = new Texture2D(resolution.x, resolution.y);
 
         var maxD = GISparser.LatlonToXY(new Vector2d(data.maxLat, data.maxLon));
@@ -53,11 +57,11 @@ public class MapPlane : MonoBehaviour {
         maxL = max;
         minL = min;
 
-        if (maxD.x < max.y) return;
+        /*if (maxD.x < max.y) return;
         if (maxD.y < max.y) return;
 
         if (minD.x > min.y) return;
-        if (minD.y > min.y) return;
+        if (minD.y > min.y) return;*/
 
         /*for (int y = 0; y < resolution.y; ++y)
         {
@@ -73,14 +77,16 @@ public class MapPlane : MonoBehaviour {
         foreach (var way in data.wayContainer)
         {
             Vector2d pos0 = Vector2d.zero;
+            bool first = true;
             foreach (var node in way.localNodeContainer)
-            {
-                if (pos0 == Vector2d.zero) continue;
+            {               
                 var pos1 = GISparser.LatlonToXY(node.latlon);
+                if (first) { first = false; pos0 = pos1; continue; }
+
                 var pixel0 = XYtoPixel(pos0);
                 var pixel1 = XYtoPixel(pos1);
 
-                double thickness = 0.001;
+                double thickness = 0.00001;
 
                 double pixelSize = ((0.5) / (double)(resolution.y)) * (maxL.y - minL.y);
 
@@ -132,10 +138,9 @@ public class MapPlane : MonoBehaviour {
 
     public Vector2Int XYtoPixel(Vector2d p)
     {
-        return new Vector2Int(
-            (int)(((p.x - minL.x) / (maxL.x - minL.x)) * (double)resolution.x),
-            (int)(((p.y - minL.y) / (maxL.y - minL.y)) * (double)resolution.y)
-            );
+        double x = (((p.x - minL.x) / (maxL.x - minL.x)) * (double)resolution.x);
+        double y = (((p.y - minL.y) / (maxL.y - minL.y)) * (double)resolution.y);
+        return new Vector2Int((int)x, (int)y);
     }
 
     public Vector2d pixelToXY(Vector2Int p)

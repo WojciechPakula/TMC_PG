@@ -9,7 +9,7 @@ using UnityEngine;
 
 public static class GISparser {
     public static GISdata LoadOSM(string path)
-    {
+    {        
         GISdata loadedData = new GISdata();
         osm Osm = new osm();
         //najpierw ładujemy ten osm który zawiera wszystkie dane

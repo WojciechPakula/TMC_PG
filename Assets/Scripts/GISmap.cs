@@ -10,10 +10,15 @@ public class GISmap : MonoBehaviour {
     int orderCounter = 0;
 
     GISdata gisdata;
-    public string path = @"~\Assets\testowyOSM.osm";
+    //public string path = @"G:\POLITECHNIKA\PROJEKTY\#8 Technologie map cyfrowych\geo3\geo3\TMC_PG\Assets\testowyOSM.osm";
 
     void Start () {
-        gisdata = GISparser.LoadOSM(path); 
+        gisdata = GISparser.LoadOSM(@"G:\POLITECHNIKA\PROJEKTY\#8 Technologie map cyfrowych\maly.osm");
+
+        gisdata.minLat = 54.3690100;
+        gisdata.minLon = 18.6095200;
+        gisdata.maxLat = 54.3745700;
+        gisdata.maxLon = 18.6237900;
 
         setPlaneSize();
         //tmpsize = planeSize / 2; inaczej to zrobic
@@ -112,7 +117,7 @@ public class GISmap : MonoBehaviour {
         ++orderCounter;
 
         //texture
-        //comp.fillTexture();
+        comp.fillTexture(GISparser.LatlonToXY(new Vector2d(gisdata.minLat, gisdata.minLon)), GISparser.LatlonToXY(new Vector2d(gisdata.maxLat, gisdata.maxLon)), gisdata);
     }
 
     //kamera
