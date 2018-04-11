@@ -8,7 +8,13 @@ public class GISmap : MonoBehaviour {
     public float whproportion = 0;
     MapPlane mapplane;    //tymczasowe
     int orderCounter = 0;
+
+    GISdata gisdata;
+    public string path = @"~\Assets\testowyOSM.osm";
+
     void Start () {
+        gisdata = GISparser.LoadOSM(path); 
+
         setPlaneSize();
         //tmpsize = planeSize / 2; inaczej to zrobic
         setPlane();
@@ -81,7 +87,7 @@ public class GISmap : MonoBehaviour {
     {
         if (
             ((mapplane.transform.localScale - (Vector3.one * (tmpsize * 2.0f * 100.0f / planeSize) * whproportion)).magnitude >= 0.001) ||
-            ((mapplane.transform.position - ghostPivot.transform.position).magnitude >= tmpsize * 2.0f* whproportion)
+            ((mapplane.transform.position - ghostPivot.transform.position).magnitude >= tmpsize * 2.0f* whproportion*0.8)
             )
         {
             setPlane();
@@ -104,6 +110,9 @@ public class GISmap : MonoBehaviour {
         mapplane = mp;
         spr.sortingOrder = orderCounter;
         ++orderCounter;
+
+        //texture
+        //comp.fillTexture();
     }
 
     //kamera
