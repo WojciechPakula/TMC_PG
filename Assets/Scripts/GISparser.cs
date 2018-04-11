@@ -1,12 +1,72 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Xml.Serialization;
 using UnityEngine;
 
 public static class GISparser {
     public static GISdata LoadOSM(string path)
     {
-        //coś
-        return null;
+        GISdata loadedData = new GISdata();
+        osm Osm = new osm();
+        //najpierw ładujemy ten osm który zawiera wszystkie dane
+        XmlSerializer serializer = new XmlSerializer(typeof(osm));
+        StreamReader reader = new StreamReader(path);
+        Osm = (osm)serializer.Deserialize(reader);
+        reader.Close();
+
+        osmNode[] osmNodes = Osm.node;
+        osmWay[] osmWays = Osm.way;
+        GISnode currentNode = null;
+        GISway currentWay = null;
+
+        //wczytujemy najpierw nody bo są potrzebne przy drogach
+        foreach (osmNode node in osmNodes)
+        {
+            //aktualny node tworzony - id, współrzędne
+            currentNode = new GISnode(Convert.ToInt64(node.id), double.Parse(node.lat, CultureInfo.InvariantCulture), double.Parse(node.lon, CultureInfo.InvariantCulture));
+            //sprawdzamy czy ma tagi
+            if (node.tag != null)
+            {
+                foreach (tag nodeTag in node.tag)
+                {
+                    //dodajemy każdy tag do słownika
+                    currentNode.tags.Add(nodeTag.k, nodeTag.v);
+                }
+            }
+            //ustawiamy visibility i dodajemy
+            currentNode.visible = Convert.ToBoolean(node.visible);
+            loadedData.nodeContainer.Add(currentNode);
+        }
+
+        foreach (osmWay way in osmWays)
+        {
+            //aktualny way tworzony - tylko id
+            currentWay = new GISway(Convert.ToInt64(way.id));
+            //sprawdzamy czy ma tagi
+            if (way.tag != null)
+            {
+                foreach (tag wayTag in way.tag)
+                {
+                    //dodajemy tagi
+                    currentWay.tags.Add(wayTag.k, wayTag.v);
+                }
+            }
+            //przechodzimy się po wszystkich nodach waywa
+            foreach (osmWayND wayNode in way.nd)
+            {
+                //szukamy w nodach już dodanych tego aktualnego (żeby była referencja) i dodajemy
+                GISnode node = loadedData.nodeContainer.Find(i => i.id == Convert.ToInt64(wayNode.@ref));
+                currentWay.localNodeContainer.Add(node);
+            }
+            //ustawiamy visibility i dodajemy
+            currentWay.visible = Convert.ToBoolean(way.visible);
+            loadedData.wayContainer.Add(currentWay);
+        }
+
+        return loadedData;
     }
 
     //generator płaskiej ziemi

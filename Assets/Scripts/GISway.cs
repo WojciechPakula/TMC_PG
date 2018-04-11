@@ -27,7 +27,7 @@ public class GISway
         }
     }
 
-    GISway(long id = 0)
+    public GISway(long id = 0)
     {
         this.id = id;
         localNodeContainer = new List<GISnode>();

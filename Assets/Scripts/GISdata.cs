@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Xml.Serialization;
 using UnityEngine;
 
 public class GISdata
@@ -10,9 +11,11 @@ public class GISdata
     public double maxLon { get; set; }
 
     public List<GISway> wayContainer { get; set; }
+
+    [XmlElement("node")]
     public List<GISnode> nodeContainer { get; set; }
 
-    GISdata()
+    public GISdata()
     {
         wayContainer = new List<GISway>();
         nodeContainer = new List<GISnode>();

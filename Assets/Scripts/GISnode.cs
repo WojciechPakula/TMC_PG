@@ -17,4 +17,9 @@ public class GISnode
         latlon = new Vector2d(latitude, longitude);
         tags = new Dictionary<string, string>();
     }
+
+    public GISnode()
+    {
+
+    }
 }
