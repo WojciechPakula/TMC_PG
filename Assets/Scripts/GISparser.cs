@@ -9,18 +9,20 @@ public static class GISparser {
         return null;
     }
 
+    
+
     //generator płaskiej ziemi
-    public static Vector2 LatlonToXY(Vector2 latlon)
+    public static Vector2d LatlonToXY(Vector2d latlon)
     {
-        Vector2 result;
-        result.y = (float)(System.Math.Log(System.Math.Tan((latlon.y + 90) / 360 * System.Math.PI)) / System.Math.PI * 180);
+        Vector2d result;
+        result.y = System.Math.Log(System.Math.Tan((latlon.y + 90d) / 360d * System.Math.PI)) / System.Math.PI * 180d;
         result.x = latlon.x;
         return result;
     }
-    public static Vector2 XYtoLatlon(Vector2 XY)
+    public static Vector2d XYtoLatlon(Vector2d XY)
     {
-        Vector2 result;       
-        result.y = (float)(System.Math.Atan(System.Math.Exp((double)XY.y / 180 * System.Math.PI)) / System.Math.PI * 360 - 90);
+        Vector2d result;       
+        result.y = System.Math.Atan(System.Math.Exp(XY.y / 180d * System.Math.PI)) / System.Math.PI * 360d - 90d;
         result.x = XY.x;
         return result;
     }

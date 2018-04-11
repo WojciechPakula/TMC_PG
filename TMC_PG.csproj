@@ -224,6 +224,9 @@
     <Compile Include="Assets\Scripts\GISnode.cs" />
     <Compile Include="Assets\Scripts\GISparser.cs" />
     <Compile Include="Assets\Scripts\GISway.cs" />
+    <Compile Include="Assets\Scripts\Mathd.cs" />
+    <Compile Include="Assets\Scripts\Vector2d.cs" />
+    <Compile Include="Assets\Scripts\Vector3d.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="GenerateTargetFrameworkMonikerAttribute" />
