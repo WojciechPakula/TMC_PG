@@ -15,6 +15,12 @@ public static class GISparser {
         return false;
     }
 
+    public static bool fieldChecker(List<Vector2d> points, Vector2d p)
+    {
+        //cos
+        return false;
+    }
+
     //generator płaskiej ziemi
     public static Vector2d LatlonToXY(Vector2d latlon)
     {
