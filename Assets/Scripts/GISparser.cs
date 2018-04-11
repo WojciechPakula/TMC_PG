@@ -9,6 +9,12 @@ public static class GISparser {
         return null;
     }
 
+    public static bool lineChecker(Vector2d l1, Vector2d l2, Vector2d p, float thickness)
+    { 
+        //cos
+        return false;
+    }
+
     //generator płaskiej ziemi
     public static Vector2d LatlonToXY(Vector2d latlon)
     {
