@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GISmap : MonoBehaviour {
     // Use this for initialization
@@ -13,18 +14,26 @@ public class GISmap : MonoBehaviour {
     //public string path = @"G:\POLITECHNIKA\PROJEKTY\#8 Technologie map cyfrowych\geo3\geo3\TMC_PG\Assets\testowyOSM.osm";
 
     void Start () {
-        gisdata = GISparser.LoadOSM(@"G:\POLITECHNIKA\PROJEKTY\#8 Technologie map cyfrowych\geo3\geo3\TMC_PG\Assets\testowyOSM.osm");
-
+        //gisdata = GISparser.LoadOSM(@"G:\POLITECHNIKA\PROJEKTY\#8 Technologie map cyfrowych\maly.osm");
+        //gisdata = GISparser.LoadOSM(@"G:\POLITECHNIKA\PROJEKTY\#8 Technologie map cyfrowych\geo3\geo3\TMC_PG\Assets\testowyOSM.osm");
+        
         /*gisdata.minLat = 54.3690100;
         gisdata.minLon = 18.6095200;
         gisdata.maxLat = 54.3745700;
         gisdata.maxLon = 18.6237900;*/
 
-        setPlaneSize();
+        //setPlaneSize();
         //tmpsize = planeSize / 2; inaczej to zrobic
+        //setPlane();
+    }
+
+    public void loadFile(string text)
+    {
+        gisdata = GISparser.LoadOSM(text);
+        setPlaneSize();
         setPlane();
     }
-	
+
     void setPlaneSize()
     {
         int h = cam.pixelHeight;
@@ -41,8 +50,12 @@ public class GISmap : MonoBehaviour {
         
     }
 
-	// Update is called once per frame
-	void Update () {
+    public InputField ipath;
+    public InputField ikey;
+    public InputField ivalue;
+
+    // Update is called once per frame
+    void Update () {
 		if (Input.GetKey(KeyCode.W))
         {
             Move(Vector2.up);
@@ -83,13 +96,38 @@ public class GISmap : MonoBehaviour {
         {
             ZoomIn();
         }
+        if (Input.GetKey(KeyCode.X))
+        {
+            extra(ikey.text, ivalue.text);
+        }
+        if (Input.GetKey(KeyCode.L))
+        {
+            loadFile(ipath.text);
+        }
+        if (Input.GetKey(KeyCode.M))
+        {
+            czyszczenie();
+        }
         camUpdate();
         planeUpdate();
+    }
+
+    public void czyszczenie()
+    {
+        if (mapplane != null)
+        {
+            for (int i = 0; i < transform.childCount; ++i)
+            {
+                var ch = transform.GetChild(i);
+                if (ch.gameObject != mapplane.gameObject && ch.gameObject != ghostPivot.gameObject && ch.gameObject != ghostCamera.gameObject) Destroy(ch.gameObject);
+            }
+        }
     }
 
     //mapa
     public void planeUpdate()
     {
+        if (mapplane == null || gisdata == null) return; 
         if (
             ((mapplane.transform.localScale - (Vector3.one * (tmpsize * 2.0f * 100.0f / planeSize) * whproportion)).magnitude >= 0.001) ||
             ((mapplane.transform.position - ghostPivot.transform.position).magnitude >= tmpsize * 2.0f* whproportion*0.8)
@@ -97,6 +135,45 @@ public class GISmap : MonoBehaviour {
         {
             setPlane();
         }
+    }
+
+    public void extra(string key, string value)
+    {
+        const float mnoznik = 1;
+        //Destroy(mapplane);
+        var tmp = Resources.Load("Prefabs/GISplane", typeof(GameObject));
+        GameObject go = (GameObject)Instantiate(tmp);
+        go.transform.position = new Vector3(ghostPivot.transform.position.x, 0, ghostPivot.transform.position.z);
+        //go.transform.localScale = Vector3.one * (tmpsize * (float)planeSize / 1000.0f)/2.0f;
+        go.transform.localScale = Vector3.one * (tmpsize * 2.0f * 100.0f / planeSize) * whproportion/ mnoznik;
+        var comp = go.GetComponent<MapPlane>();
+        var spr = go.GetComponent<SpriteRenderer>();
+        comp.resolution = new Vector2Int((int)(planeSize * mnoznik), (int)(planeSize* mnoznik));
+        //go.transform.rotation.eulerAngles(90,0,0);
+        MapPlane mp = go.GetComponent<MapPlane>();
+        go.transform.parent = this.transform;
+        mapplane = mp;
+        spr.sortingOrder = orderCounter;
+        ++orderCounter;
+
+        //texture
+        var min = GISparser.LatlonToXY(new Vector2d(gisdata.minLon, gisdata.minLat));
+        var max = GISparser.LatlonToXY(new Vector2d(gisdata.maxLon, gisdata.maxLat));
+
+        var sr = (max - min) / 2;
+
+        sr += max;
+
+        double kat = 0.005;
+        double obszar = kat * tmpsize * 2.0f * whproportion;
+
+        min = sr - new Vector2d(obszar, obszar);
+        max = sr + new Vector2d(obszar, obszar);
+
+        min += new Vector2d(ghostPivot.transform.position.x * kat * 2.0f, ghostPivot.transform.position.z * kat * 2.0f);
+        max += new Vector2d(ghostPivot.transform.position.x * kat * 2.0f, ghostPivot.transform.position.z * kat * 2.0f);
+
+        comp.fillHeatMap(min, max, gisdata, key, value);
     }
 
     public void setPlane()

@@ -46,6 +46,74 @@ public class MapPlane : MonoBehaviour {
     Vector2d maxL;
     Vector2d minL;
 
+    public void fillHeatMap(Vector2d min, Vector2d max, GISdata data, string key, string value)
+    {
+        rend = GetComponent<SpriteRenderer>();
+        tex = new Texture2D(resolution.x, resolution.y);
+
+        var maxD = GISparser.LatlonToXY(new Vector2d(data.maxLat, data.maxLon));
+        var minD = GISparser.LatlonToXY(new Vector2d(data.minLat, data.minLon));
+
+        maxL = max;
+        minL = min;
+
+        float[,] heatmap = new float[resolution.x, resolution.y];
+        float maxOdl = 255;
+        float minOdl = 10000;
+
+        foreach (var node in data.nodeContainer)
+        {
+            try
+            {
+                if (node.tags[key] == value)
+                {
+                    minOdl = 10000;
+                    Vector2Int pos = XYtoPixel(GISparser.LatlonToXY(node.latlon));
+                    float[,] heatmapLocal = new float[resolution.x, resolution.y];
+                    //heatmapLocal[pos.x, pos.y] = 255;
+                    for (int y = 0; y < resolution.y; ++y)
+                    {
+                        for (int x = 0; x < resolution.x; ++x)
+                        {
+                            float odl = 1000-Mathf.Sqrt((pos.x - x) * (pos.x - x) + (pos.y - y) * (pos.y - y));
+                            //odl = Mathf.Sqrt(odl);
+                            if (odl > maxOdl) maxOdl = odl;                            
+                            heatmapLocal[x, y] = odl;                              
+                        }
+                    }
+                    for (int y = 0; y < resolution.y; ++y)
+                    {
+                        for (int x = 0; x < resolution.x; ++x)
+                        {
+                            if (heatmapLocal[x, y] > heatmap[x, y]) heatmap[x, y] = heatmapLocal[x, y];
+                            if (heatmap[x, y] < minOdl) minOdl = heatmap[x, y];
+                        }
+                    }
+                }
+            }
+            catch
+            {
+
+            }
+        }
+        for (int y = 0; y < resolution.y; ++y)
+        {
+            for (int x = 0; x < resolution.x; ++x)
+            {
+                heatmap[x, y] = (heatmap[x, y]- minOdl) /(maxOdl- minOdl);
+                heatmap[x, y] = 1 - heatmap[x, y];
+                Color c = new Color(heatmap[x, y], 0, heatmap[x, y]);
+                tex.SetPixel(x, y, c);
+            }
+        }
+        tex.filterMode = FilterMode.Point;
+        tex.Apply();
+
+        Sprite newSprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), Vector2.one * 0.5f);
+
+        rend.sprite = newSprite;
+    }
+
     public void fillTexture(Vector2d min, Vector2d max, GISdata data)
     {
         rend = GetComponent<SpriteRenderer>();
@@ -76,9 +144,32 @@ public class MapPlane : MonoBehaviour {
 
         foreach (var way in data.wayContainer)
         {
-            Color color = randomColor();
+            Color color = Color.black;
             Vector2d pos0 = Vector2d.zero;
             bool first = true;
+
+            try
+            {
+                if (way.tags["highway"] == "residential") color = Color.red;
+                if (way.tags["highway"] == "living_street") color = Color.red;
+                if (way.tags["highway"] == "primary") color = Color.red;
+                if (way.tags["highway"] == "secondary") color = Color.red;
+                if (way.tags["highway"] == "tertiary") color = Color.red;
+                if (way.tags["highway"] == "service") color = Color.red;
+                if (way.tags["highway"] == "track") color = Color.red;
+                if (way.tags["highway"] == "motorway") color = Color.red;
+                if (way.tags["highway"] == "road") color = Color.red;
+                if (way.tags["highway"] == "path") color = Color.red;
+                if (way.tags["highway"] == "motorway") color = Color.red;
+                if (way.tags["highway"] == "motorway") color = Color.red;
+                if (way.tags["route"] == "road") color = Color.red;
+            }
+            catch
+            {
+
+            }
+            
+
             foreach (var node in way.localNodeContainer)
             {               
                 var pos1 = GISparser.LatlonToXY(node.latlon);
