@@ -22,12 +22,18 @@ public static class GISparser {
         osmWay[] osmWays = Osm.way;
         GISnode currentNode = null;
         GISway currentWay = null;
+        double minLat = double.MaxValue;
+        double maxLat = double.MinValue;
+        double minLon = double.MaxValue;
+        double maxLon = double.MinValue;
 
         //wczytujemy najpierw nody bo są potrzebne przy drogach
         foreach (osmNode node in osmNodes)
         {
+            double currentLat = double.Parse(node.lat, CultureInfo.InvariantCulture);
+            double currentLon = double.Parse(node.lon, CultureInfo.InvariantCulture);
             //aktualny node tworzony - id, współrzędne
-            currentNode = new GISnode(Convert.ToInt64(node.id), double.Parse(node.lat, CultureInfo.InvariantCulture), double.Parse(node.lon, CultureInfo.InvariantCulture));
+            currentNode = new GISnode(Convert.ToInt64(node.id), currentLat, currentLon);
             //sprawdzamy czy ma tagi
             if (node.tag != null)
             {
@@ -40,6 +46,10 @@ public static class GISparser {
             //ustawiamy visibility i dodajemy
             currentNode.visible = Convert.ToBoolean(node.visible);
             loadedData.nodeContainer.Add(currentNode);
+            if (currentLat > maxLat) maxLat = currentLat;
+            if (currentLon > maxLon) maxLon = currentLon;
+            if (currentLat < minLat) minLat = currentLat;
+            if (currentLon < minLon) minLon = currentLon;
         }
 
         foreach (osmWay way in osmWays)
@@ -66,7 +76,10 @@ public static class GISparser {
             currentWay.visible = Convert.ToBoolean(way.visible);
             loadedData.wayContainer.Add(currentWay);
         }
-
+        loadedData.maxLat = maxLat;
+        loadedData.maxLon = maxLon;
+        loadedData.minLat = minLat;
+        loadedData.minLon = minLon;
         return loadedData;
     }
 
