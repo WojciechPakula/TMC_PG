@@ -56,8 +56,10 @@ public class GISmap : MonoBehaviour {
     //kamera
     private GameObject ghostPivot = null;   //wirtualny punkt na który patrzy kamera, punkt dotyka mapy.
     private GameObject ghostCamera = null;  //wirtualna kamera która porusza się gwałtownie i prawdziwa kamera jest do niej "dociągana"
-    private float r = 100f;                  //odległość kamery od pivota (zoom)
-    private float alpha = 70f;              //kąt pomiędzy płaszczyzną mapy, a prostą przechodzącą przez wirtualną kamerę i pivot. 90f to widok od góry.                
+    private float r = 10f;                  //odległość kamery od pivota (zoom)
+    private float tmpr = 1f;
+    private float tmpsize = 5f;
+    private float alpha = 89f;              //kąt pomiędzy płaszczyzną mapy, a prostą przechodzącą przez wirtualną kamerę i pivot. 90f to widok od góry.                
 
     //dane tymczasowe, zbiera zadania do wykonania i wykonuje je wszystkie na raz podczas update.
     private Vector3 tmpDirection = Vector3.zero;
@@ -66,7 +68,7 @@ public class GISmap : MonoBehaviour {
     private float tmpZoom = 0;
 
     //Prędkości różnych typów ruchów.
-    private const float MoveVelocity = 200.0f;   //prędkość przesuwania się
+    private const float MoveVelocity = 5.0f;   //prędkość przesuwania się
     private const float RotVelocity = 100.0f;   //prędkość obrotu dookoła pivota
     private const float BendVelocity = 80.0f;   //prędkość zmiany wysokości kamery
     private const float ZoomVelocity = 400.0f;   //prędkość oddalania kamery od mapy
@@ -99,11 +101,11 @@ public class GISmap : MonoBehaviour {
     }
     public void ZoomIn()
     {
-        Zoom(-1f);
+        Zoom(1f);
     }
     public void ZoomOut()
     {
-        Zoom(1f);
+        Zoom(-1f);
     }
     private void Zoom(float direction)
     {
@@ -117,8 +119,8 @@ public class GISmap : MonoBehaviour {
         ghostCamera = new GameObject();
         ghostPivot.gameObject.transform.parent = gameObject.transform;
         ghostCamera.gameObject.transform.parent = gameObject.transform;
-        ghostPivot.transform.Translate(0, 3, 0);
-        //cam.orthographic = true;       
+        ghostPivot.transform.Translate(0, 0, 0);
+        cam.orthographic = true;       
     }
 
     void camUpdate()
@@ -128,7 +130,7 @@ public class GISmap : MonoBehaviour {
             Debug.LogError("Błąd, cam = null");
             return;
         }
-        float moveOffset = MoveVelocity * Time.deltaTime;
+        float moveOffset = MoveVelocity * Time.deltaTime* tmpsize;
         float rotOffset = RotVelocity * Time.deltaTime * tmpRotation;
         float bendOffset = BendVelocity * Time.deltaTime;
         float zoomOffset = ZoomVelocity * Time.deltaTime * tmpZoom;
@@ -139,10 +141,22 @@ public class GISmap : MonoBehaviour {
         //Party Hard
         float rAlpha = Mathf.PI / 180f * alpha;
         float z = 0, y = 0;
-        r += zoomOffset;
-        cam.orthographicSize += zoomOffset;
-        cam.orthographicSize = Limit(0.001f, 100f, cam.orthographicSize);
-        r = Limit(10f, 100f, r);   //Ograniczenie zooma
+        //tmpr += zoomOffset;
+        //cam.orthographicSize += zoomOffset;
+        //cam.orthographicSize = Limit(0.001f, 100f, cam.orthographicSize);
+        //tmpr = Limit(-100000f, 100000f, tmpr);   //Ograniczenie zooma
+        //r = Mathf.Pow(1.2f,-tmpr);
+        //r = Limit(0f, 100000f, r);
+        const float prop = 1.5f;
+        //if (zoomOffset > 0) r = r / prop;
+        //if (zoomOffset < 0) r = r * prop;
+
+        if (zoomOffset > 0) tmpsize = tmpsize / prop;
+        if (zoomOffset < 0) tmpsize = tmpsize * prop;
+
+        tmpsize = Limit(0.00000001f, 100f, tmpsize);
+
+        r = Limit(0f, 100000f, r);
         alpha += bendOffset * tmpBend;
         alpha = Limit(10f, 89.9f, alpha); //Ograniczenie benda
         ghostPivot.transform.localRotation *= rotation;
@@ -160,6 +174,7 @@ public class GISmap : MonoBehaviour {
         //płynne dosuwanie prawdziwej kamery do ghost kamery
         cam.transform.position = Vector3.Lerp(cam.transform.position, ghostCamera.transform.position, Rapidity * Time.deltaTime);
         cam.transform.rotation = Quaternion.Lerp(cam.transform.rotation, ghostCamera.transform.rotation, Rapidity * Time.deltaTime);
+        cam.orthographicSize = Mathf.Lerp(cam.orthographicSize, tmpsize, Rapidity * Time.deltaTime);
 
         //reset
         tmpDirection = Vector3.zero;
