@@ -70,9 +70,33 @@ public static class GISparser {
     }
 
     public static bool lineChecker(Vector2d l1, Vector2d l2, Vector2d p, float thickness)
-    { 
-        //cos
-        return false;
+    {
+        double maxDistance = thickness / 2;
+
+        // P jest w okręgu o promieniu maxDistance od l1
+        double l1_distance = (p - l1).magnitude;
+        if (l1_distance <= maxDistance)
+        {
+            return true;
+        }
+
+        // P jest w okręgu o promieniu maxDistance od l2
+        double l2_distance = (p - l2).magnitude;
+        if (l2_distance <= maxDistance)
+        {
+            return true;
+        }
+
+        // P znajduje się w pozostałym obszarze
+        Vector2d xDirection = (l2 - l1).normalized;
+        Vector2d yDirection = new Vector2d(-xDirection.y, xDirection.x);
+        Vector2d point = p - l1;
+
+        double pointProjectedX = Vector2d.Dot(point, xDirection);
+        double pointProjectedY = Vector2d.Dot(point, yDirection);
+
+        return pointProjectedX >= 0 && pointProjectedX <= (l2 - l1).magnitude &&
+            pointProjectedY <= maxDistance && pointProjectedY >= -maxDistance;
     }
 
     public static bool fieldChecker(List<Vector2d> points, Vector2d p)
