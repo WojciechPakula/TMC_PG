@@ -5,8 +5,8 @@ using UnityEngine.UI;
 
 public class GISmap : MonoBehaviour {
     // Use this for initialization
-    public int planeSize = 0;
-    public float whproportion = 0;
+    int planeSize = 0;
+    float whproportion = 0;
     MapPlane mapplane;    //tymczasowe
     int orderCounter = 0;
 
