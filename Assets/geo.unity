@@ -398,8 +398,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "Kamera WASD,QE,ZC\nprzycisk X tworzy prymitywn\u0105 map\u0119 ciep\u0142a\nL
-    \u0142aduje map\u0119 z scie\u017Cki\nM czy\u015Bci resztki map w tle"
+  m_Text: "Kamera WASD\nL \u0142aduje map\u0119 z scie\u017Cki"
 --- !u!222 &460413666
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -422,7 +421,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &470983644
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -643,8 +642,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2674ed3c63dbcdd41a316095d10fa774, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  zoom: 5
+  zoom: 14
   cam: {fileID: 1379097368}
+  ipath: {fileID: 0}
 --- !u!4 &1074673643
 Transform:
   m_ObjectHideFlags: 0
@@ -749,7 +749,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1100669714
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1139,7 +1139,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1450573570
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1347,7 +1347,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1652898938
 RectTransform:
   m_ObjectHideFlags: 0

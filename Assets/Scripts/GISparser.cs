@@ -204,12 +204,12 @@ public static class GISparser {
             bool bx = GetBit(x,i);
             bool by = GetBit(y,i);
             
-            if (bx == false && by == false) { list.Insert(0,0); continue; }
-            if (bx == true && by == false) { list.Insert(0, 1); continue; }
-            if (bx == false && by == true) { list.Insert(0, 2); continue; }
-            if (bx == true && by == true) { list.Insert(0, 3); continue; }
+            if (bx == false && by == false) { list.Add(0); continue; }
+            if (bx == true && by == false) { list.Add(1); continue; }
+            if (bx == false && by == true) { list.Add(2); continue; }
+            if (bx == true && by == true) { list.Add(3); continue; }
         }
-
+        list.Reverse();
         return list;
     }
     public static Vector2Int getQuadCoord(List<byte> list)
@@ -229,7 +229,7 @@ public static class GISparser {
     }
     private static bool GetBit(this int b, int bitNumber)
     {
-        return (b & (1 << bitNumber - 1)) != 0;
+        return (b & (1 << bitNumber)) != 0;
     }
     /*public static Vector2d LatlonToXY(Vector2d latlon)
     {

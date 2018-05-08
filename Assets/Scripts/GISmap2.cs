@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
 using System.Collections.Concurrent;
+using UnityEngine.UI;
 
 public class GISmap2 : MonoBehaviour {
-    GISdata gisdata;
+    GISdata gisdata = null;
     GISquadtree qt;
 
     public int zoom;
@@ -18,6 +19,8 @@ public class GISmap2 : MonoBehaviour {
     //punkty wyznaczają prostokąt który zawiera widoczne chunki
     Vector2Int ch1;
     Vector2Int ch2;
+
+    public InputField ipath;
 
     /*private void ExecuteInForeground(Thread main)
     {
@@ -55,24 +58,70 @@ public class GISmap2 : MonoBehaviour {
     private Texture2D generateTexture(int cx, int cy, int z)
     {
         Texture2D tex = new Texture2D(256, 256);
-        /*var path = GISparser.getQuadPath(new Vector2Int(cx, cy), z);
+        var path = GISparser.getQuadPath(new Vector2Int(cx, cy), z);
         var waysList = qt.getObjects(path);
 
+        
 
-        foreach(var way in waysList)
-        {
-            
-        }*/
+        Vector2d chunkLow = new Vector2d(((double)(cx)/ (double)(1 << z))*256.0, ((double)(cy) / (double)(1 << z)) * 256.0);
+        Vector2d chunkHigh = new Vector2d(((double)(cx+1) / (double)(1 << z)) * 256.0, ((double)(cy+1) / (double)(1 << z)) * 256.0);
 
-        var c = BitMapTest.randomColor();
+        var c = Color.white;
         for (int x = 0; x < 256; ++x)
         {
             for (int y = 0; y < 256; ++y)
             {
-                tex.SetPixel(x, y, BitMapTest.randomColor());
+                tex.SetPixel(x, y, c);
             }
         }
+
+        foreach (var way in waysList)
+        {
+            //lineChecker(Vector2d l1, Vector2d l2, Vector2d p, float thickness);
+            drawWay(ref tex, way, chunkLow, chunkHigh);
+        }
+
+
+
+        
         return tex;
+    }
+
+    void drawWay(ref Texture2D tex, GISway way, Vector2d chunkLow, Vector2d chunkHigh)
+    {
+        GISnode prev = null;
+        Vector2d? pprev = null;
+        bool renderPrev = false;
+        float thickness = 10;
+        foreach (var node in way.localNodeContainer)
+        {
+            var p = new Vector2d();
+            p.x = (node.XY.x - chunkLow.x) / (chunkHigh.x - chunkLow.x)*256.0;
+            p.y = (node.XY.y - chunkLow.y) / (chunkHigh.y - chunkLow.y) * 256.0;
+
+            //if (prev == null) {prev = node; continue;}
+            if (((p.x >= 0 && p.y >= 0 && p.x < 256 && p.y < 256) || renderPrev)&& pprev != null)
+            {
+                //punkt node jest w chunku
+                for (int y = 0; y < 256; y++)
+                {
+                    for (int x = 0; x < 256; x++)
+                    {
+                        bool rysuj = GISparser.lineChecker((Vector2d)pprev, p, new Vector2d(x,y), thickness);
+                        if (rysuj)
+                        {
+                            tex.SetPixel(x,y,Color.black);
+                        }
+                    }
+                }
+                //koniec
+                renderPrev = true;               
+            } else
+            {
+                renderPrev = false;
+            }
+            pprev = p;
+        }
     }
 
     Thread thread;
@@ -86,21 +135,15 @@ public class GISmap2 : MonoBehaviour {
         //cam.orthographicSize = 256.0f / Mathf.Pow(2, zoom) * ((float)cam.pixelHeight/256);
         //cam.orthographicSize = (float)cam.pixelHeight / Mathf.Pow(2, zoom)/2;
         //Debug.Log(worldPosToChunk(new Vector2d(200,200)));
-        //getChunkCoordsList();
+        //getChunkCoordsList();        
+        //ghostCamera.transform.position = cam.transform.position;
+        //loadFile("G:\\POLITECHNIKA\\PROJEKTY\\#8 Technologie map cyfrowych\\maly.osm"); 
         ghostCamera = new GameObject();
         ghostCamera.transform.position = cam.transform.position;
-        loadFile("G:\\POLITECHNIKA\\PROJEKTY\\#8 Technologie map cyfrowych\\maly.osm");
-        qt = new GISquadtree(null);
-        qt.size = new Vector2d(256,256);
-        qt.position = new Vector2d(0,0);
-        foreach (var way in gisdata.wayContainer)
-        {
-            qt.insert(way);
-        }
-        oldzoom = zoom;
+        oldzoom = zoom;             
     }
+  
 
-    
     //qt = new GISquadtree(null);
 
     public void loadFile(string text)
@@ -130,7 +173,7 @@ public class GISmap2 : MonoBehaviour {
         keysUpdate();
         if (oldzoom != zoom)
         {  //zoom uległ zmianie
-            if (zoom > 16) zoom = oldzoom;
+            if (zoom > 20) zoom = oldzoom;
             else
             if (zoom < 0) zoom = oldzoom;
             else
@@ -170,6 +213,25 @@ public class GISmap2 : MonoBehaviour {
         if (Input.mouseScrollDelta.y > 0)
         {
             zoom++;
+        }
+        if (Input.GetKeyDown(KeyCode.L))
+        {
+            loadFile(ipath.text);
+            //loadFile("G:\\POLITECHNIKA\\PROJEKTY\\#8 Technologie map cyfrowych\\maly.osm");
+            qt = new GISquadtree(null);
+            qt.size = new Vector2d(256, 256);
+            qt.position = new Vector2d(0, 0);
+            foreach (var way in gisdata.wayContainer)
+            {
+                qt.insert(way);
+            }
+
+            //gisdata.maxLat
+
+            //ustawienie kamery tam gdzie coś jest
+            Vector2d sr = new Vector2d((gisdata.maxLat + gisdata.minLat) / 2.0, (gisdata.maxLon + gisdata.minLon) / 2.0);
+            var cameraStartPos = GISparser.LatLonToWeb(sr);
+            ghostCamera.transform.position = new Vector3((float)cameraStartPos.x, cam.transform.position.y, -(float)cameraStartPos.y);           
         }
     }
     //kamera
@@ -237,6 +299,7 @@ public class GISmap2 : MonoBehaviour {
 
     void updateChunks()
     {
+        if (gisdata == null) return;
         var requestedChunks = getChunkCoordsList();
 
         int size = (1 << zoom);
@@ -259,9 +322,10 @@ public class GISmap2 : MonoBehaviour {
                 var go = setPlane(new Vector2d(ele.x * length, -ele.y * length), length);//tworzy chunki tylko gdy nie istnieją
                 var spr = go.GetComponent<SpriteRenderer>();
                 var com = go.GetComponent<BitMapTest>();
-                com.setTexture(generateTexture(ele.x, -ele.y, zoom));
+                com.setTexture(generateTexture(ele.x, ele.y, zoom));
                 //toProcessChunks.Add(ele);
                 doneChunks.Add(new chunkContainer(ele, spr));
+                break;
             }
             else if(chunk != null)
             {
