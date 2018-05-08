@@ -34,16 +34,16 @@ public class GISquadtree {
             Vector2d halfsize = size / 2.0;
 
             nodes[0] = new GISquadtree(this);
-            nodes[0].position = new Vector2d(position.x, position.y + halfsize.y);
+            nodes[0].position = new Vector2d(position.x, position.y);
             nodes[0].size = halfsize;
             nodes[1] = new GISquadtree(this);
-            nodes[1].position = new Vector2d(position.x+ halfsize.x, position.y + halfsize.y);
+            nodes[1].position = new Vector2d(position.x+ halfsize.x, position.y);
             nodes[1].size = halfsize;           
             nodes[2] = new GISquadtree(this);
-            nodes[2].position = new Vector2d(position.x, position.y);
+            nodes[2].position = new Vector2d(position.x, position.y + halfsize.y);
             nodes[2].size = halfsize;
             nodes[3] = new GISquadtree(this);
-            nodes[3].position = new Vector2d(position.x + halfsize.x, position.y);
+            nodes[3].position = new Vector2d(position.x + halfsize.x, position.y + halfsize.y);
             nodes[3].size = halfsize;
 
         } else Debug.Log("WARNING - quadtree już podzielone");
@@ -51,10 +51,11 @@ public class GISquadtree {
 
     public void insert(GISway element)
     {
+        list.Add(element);
         if (isLeaf())
         {
             //jezeli lisc
-            list.Add(element);
+            //list.Add(element);test bigdata
             if (list.Count >= max)
             {
                 //split
@@ -64,7 +65,7 @@ public class GISquadtree {
                 {
                     insertIntoSection(ele);
                 }
-                list.Clear();
+                //list.Clear();test bigdata
             }
         } else
         {
@@ -131,4 +132,19 @@ public class GISquadtree {
             }
         }
     }
+
+    public List<GISway> getObjects(List<byte> path)
+    {        
+        GISquadtree tmp = this;
+        foreach (var dir in path)
+        {
+            if (tmp.nodes != null)
+            {
+                tmp = tmp.nodes[dir];
+            }
+            else break;
+        }
+        return tmp.list;
+        //wszystkie podelementy tmp są rozwiązaniami
+    } 
 }

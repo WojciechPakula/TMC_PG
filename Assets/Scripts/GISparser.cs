@@ -170,25 +170,25 @@ public static class GISparser {
         return result;
     }
     //web
-    public static Vector2d LatLonToWeb(Vector2d latlon,int z)
+    public static Vector2d LatLonToWeb(Vector2d latlon,int z=0)
     {
         Vector2d result;
         latlon *= Mathd.PI/180.0;
-        result.x = -System.Math.Log(System.Math.Tan(Mathd.PI/4.0+ latlon.x/2.0)) + Mathd.PI;        
-        result.y = latlon.y + Mathd.PI;
+        result.y = -System.Math.Log(System.Math.Tan(Mathd.PI/4.0+ latlon.x/2.0)) + Mathd.PI;        
+        result.x = latlon.y + Mathd.PI;
 
         result = result * ((256 / (2 * Mathd.PI)) * Mathd.Pow(2,z));
 
         //result *= 180.0 / Mathd.PI;
         return result;
     }
-    public static Vector2d WebToLatLon(Vector2d web,int z)
+    public static Vector2d WebToLatLon(Vector2d web,int z=0)
     {
         Vector2d result;
         //web *= Mathd.PI / 180.0;
         web = web / ((256 / (2 * Mathd.PI)) * Mathd.Pow(2, z));
-        result.x = 2*System.Math.Atan(System.Math.Exp(-web.x + Mathd.PI)) - Mathd.PI/2.0;
-        result.y = web.y - Mathd.PI;
+        result.y = 2*System.Math.Atan(System.Math.Exp(-web.x + Mathd.PI)) - Mathd.PI/2.0;
+        result.x = web.y - Mathd.PI;
 
         result *= 180.0 / Mathd.PI;
         return result;
@@ -203,11 +203,11 @@ public static class GISparser {
         {
             bool bx = GetBit(x,i);
             bool by = GetBit(y,i);
-
-            if (bx == false && by == false) { list.Add(0); continue; }
-            if (bx == true && by == false) { list.Add(1); continue; }
-            if (bx == false && by == true) { list.Add(2); continue; }
-            if (bx == true && by == true) { list.Add(3); continue; }
+            
+            if (bx == false && by == false) { list.Insert(0,0); continue; }
+            if (bx == true && by == false) { list.Insert(0, 1); continue; }
+            if (bx == false && by == true) { list.Insert(0, 2); continue; }
+            if (bx == true && by == true) { list.Insert(0, 3); continue; }
         }
 
         return list;
@@ -216,6 +216,7 @@ public static class GISparser {
     {
         Vector2Int result = new Vector2Int(0,0);
         int z = -1;
+        list.Reverse();
         foreach (var element in list)
         {
             ++z;

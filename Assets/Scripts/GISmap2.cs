@@ -6,14 +6,12 @@ using System.Collections.Concurrent;
 
 public class GISmap2 : MonoBehaviour {
     GISdata gisdata;
+    GISquadtree qt;
 
     public int zoom;
     private int oldzoom;
 
     public Camera cam;
-
-    public GameObject test1;
-    public GameObject test2;
 
     int layerId = 0;
 
@@ -57,7 +55,16 @@ public class GISmap2 : MonoBehaviour {
     private Texture2D generateTexture(int cx, int cy, int z)
     {
         Texture2D tex = new Texture2D(256, 256);
+        /*var path = GISparser.getQuadPath(new Vector2Int(cx, cy), z);
+        var waysList = qt.getObjects(path);
 
+
+        foreach(var way in waysList)
+        {
+            
+        }*/
+
+        var c = BitMapTest.randomColor();
         for (int x = 0; x < 256; ++x)
         {
             for (int y = 0; y < 256; ++y)
@@ -80,7 +87,25 @@ public class GISmap2 : MonoBehaviour {
         //cam.orthographicSize = (float)cam.pixelHeight / Mathf.Pow(2, zoom)/2;
         //Debug.Log(worldPosToChunk(new Vector2d(200,200)));
         //getChunkCoordsList();
+        ghostCamera = new GameObject();
+        ghostCamera.transform.position = cam.transform.position;
+        loadFile("G:\\POLITECHNIKA\\PROJEKTY\\#8 Technologie map cyfrowych\\maly.osm");
+        qt = new GISquadtree(null);
+        qt.size = new Vector2d(256,256);
+        qt.position = new Vector2d(0,0);
+        foreach (var way in gisdata.wayContainer)
+        {
+            qt.insert(way);
+        }
         oldzoom = zoom;
+    }
+
+    
+    //qt = new GISquadtree(null);
+
+    public void loadFile(string text)
+    {
+        gisdata = GISparser.LoadOSM(text);
     }
 
     private void OnDestroy()
@@ -102,19 +127,89 @@ public class GISmap2 : MonoBehaviour {
 
     // Update is called once per frame
     void Update () {
-        Vector2d range = getCameraRange();
-        test1.transform.position = new Vector3(-(float)range.x/2f + cam.transform.position.x, 0, -(float)range.y/2f+ cam.transform.position.z);
-        test2.transform.position = new Vector3((float)range.x / 2f+ cam.transform.position.x, 0, (float)range.y / 2f+ cam.transform.position.z);
-        cam.orthographicSize = (float)cam.pixelHeight / Mathf.Pow(2, zoom) / 2.0f;
-        updateChunks();
-        if (oldzoom != zoom) {  //zoom uległ zmianie
-            if (zoom > 16) zoom = oldzoom; else
-            if (zoom < 0) zoom = oldzoom; else
+        keysUpdate();
+        if (oldzoom != zoom)
+        {  //zoom uległ zmianie
+            if (zoom > 16) zoom = oldzoom;
+            else
+            if (zoom < 0) zoom = oldzoom;
+            else
             {
                 oldzoom = zoom;
                 layerId++;
             }
         }
+        updateCamera();
+        Vector2d range = getCameraRange();
+        //cam.orthographicSize = (float)cam.pixelHeight / Mathf.Pow(2, zoom) / 2.0f;
+        updateChunks();             
+    }
+
+    void keysUpdate()
+    {
+        if (Input.GetKey(KeyCode.W))
+        {
+            Move(Vector2.up);
+        }
+        if (Input.GetKey(KeyCode.A))
+        {
+            Move(Vector2.left);
+        }
+        if (Input.GetKey(KeyCode.S))
+        {
+            Move(Vector2.down);
+        }
+        if (Input.GetKey(KeyCode.D))
+        {
+            Move(Vector2.right);
+        }
+        if (Input.mouseScrollDelta.y < 0)
+        {
+            zoom--;
+        }
+        if (Input.mouseScrollDelta.y > 0)
+        {
+            zoom++;
+        }
+    }
+    //kamera
+    private Vector3 tmpDirection = Vector3.zero;
+    private GameObject ghostCamera = null;
+    private const float MoveVelocity = 50.0f;
+    private float tmpsize = 5;
+    //Gwałtowność ruchów
+    private const float Rapidity = 5f;
+    public void Move(Vector2 direction)
+    {
+        if (direction == null) return;
+        if (direction.magnitude > 100f)
+        {
+            direction.Normalize();
+            direction = direction * 100f;
+        }
+        tmpDirection += new Vector3(direction.x, 0, direction.y);
+    }
+
+    public void updateCamera()
+    {
+        tmpsize = 5.0f / (float)(1 << zoom);
+        tmpsize = Limit(0.00000001f, 100f, tmpsize);
+
+        float moveOffset = MoveVelocity * Time.deltaTime * tmpsize;
+        Vector3 move = new Vector3(moveOffset * tmpDirection.x, 0, moveOffset * tmpDirection.z);
+        ghostCamera.transform.Translate(move);
+
+        cam.transform.position = Vector3.Lerp(cam.transform.position, ghostCamera.transform.position, Rapidity * Time.deltaTime);
+        cam.orthographicSize = Mathf.Lerp(cam.orthographicSize, (float)cam.pixelHeight / Mathf.Pow(2, zoom) / 2.0f, Rapidity * Time.deltaTime);
+
+        tmpDirection = Vector3.zero;
+    }
+    //Jeżeli wartośc wyjdzie poza przedział to otrzymuje wartość graniczną
+    private float Limit(float down, float up, float value)
+    {
+        if (value < down) value = down;
+        if (value > up) value = up;
+        return value;
     }
 
     /*void updateChunks()
@@ -218,7 +313,8 @@ public class GISmap2 : MonoBehaviour {
     private Vector2d getCameraRange()
     {
         float c = (float)cam.pixelWidth/ (float)cam.pixelHeight;
-        double size = cam.orthographicSize;
+        //double size = cam.orthographicSize;
+        double size = (float)cam.pixelHeight / Mathf.Pow(2, zoom) / 2.0f;
         Vector2d result = new Vector2d(2*size*c, 2 * size);
         return result;
     }
@@ -226,11 +322,6 @@ public class GISmap2 : MonoBehaviour {
     private void Awake()
     {
         cam.orthographic = true;
-    }
-
-    public void loadFile(string text)
-    {
-        gisdata = GISparser.LoadOSM(text);
     }
 
     public GameObject setPlane(Vector2d pos, double length)

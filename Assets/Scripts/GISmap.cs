@@ -26,7 +26,7 @@ public class GISmap : MonoBehaviour {
         //tmpsize = planeSize / 2; inaczej to zrobic
         //setPlane();
         loadFile("G:\\POLITECHNIKA\\PROJEKTY\\#8 Technologie map cyfrowych\\maly.osm");
-        qt = new GISquadtree(null);
+        //qt = new GISquadtree(null);
     }
 
     public void loadFile(string text)
@@ -56,7 +56,7 @@ public class GISmap : MonoBehaviour {
     public InputField ikey;
     public InputField ivalue;
 
-    public GISquadtree qt;
+    //public GISquadtree qt;
 
     // Update is called once per frame
     void Update () {
