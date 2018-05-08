@@ -6,22 +6,37 @@ using UnityEngine;
 public class GISnode
 {
     public long id { get; set; }
-    public Vector2d latlon { get; set; }
-    public Vector2d XY {
+    private Vector2d _latlon;
+    private Vector2d _XY;
+
+    public Vector2d latlon {
         get
         {
-            Vector2d result;
-            result.y = System.Math.Log(System.Math.Tan((latlon.y + 90d) / 360d * System.Math.PI)) / System.Math.PI * 180d;
-            result.x = latlon.x;
-            return result;
+            return _latlon;
         }
         set
         {
-            XY = value;
-            Vector2d result;
-            result.y = System.Math.Atan(System.Math.Exp(XY.y / 180d * System.Math.PI)) / System.Math.PI * 360d - 90d;
-            result.x = XY.x;
-            latlon = result;
+            _latlon = value;
+            //Vector2d result;
+            //result.y = System.Math.Log(System.Math.Tan((_latlon.y + 90d) / 360d * System.Math.PI)) / System.Math.PI * 180d;
+            //result.x = _latlon.x;
+
+            _XY = GISparser.LatLonToWeb(_latlon,0);
+        }
+    }
+    public Vector2d XY {
+        get
+        {
+            return _XY;
+        }
+        set
+        {
+            _XY = value;
+            //Vector2d result;
+            //result.y = System.Math.Atan(System.Math.Exp(_XY.y / 180d * System.Math.PI)) / System.Math.PI * 360d - 90d;
+            //result.x = _XY.x;
+
+            _latlon = GISparser.WebToLatLon(_XY, 0);
         }
     }
     public Dictionary<string, string> tags { get; set; }
@@ -35,8 +50,5 @@ public class GISnode
         tags = new Dictionary<string, string>();
     }
 
-    public GISnode()
-    {
 
-    }
 }

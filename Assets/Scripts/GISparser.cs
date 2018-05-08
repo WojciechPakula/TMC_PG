@@ -134,6 +134,8 @@ public static class GISparser {
     }
 
     //generator płaskiej ziemi
+    /*
+    //stare
     public static Vector2d LatlonToXY(Vector2d latlon)
     {
         Vector2d result;
@@ -149,8 +151,104 @@ public static class GISparser {
         result.y = System.Math.Atan(System.Math.Exp(XY.y / 180d * System.Math.PI)) / System.Math.PI * 360d - 90d;
         result.x = XY.x;
         return result;
+    }*/
+    //nowsze/poprawione zamienienie x i y
+    public static Vector2d LatlonToXY(Vector2d latlon)
+    {
+        Vector2d result;
+        result.x = System.Math.Log(System.Math.Tan((latlon.x + 90d) / 360d * System.Math.PI)) / System.Math.PI * 180d;
+        result.y = latlon.y;
+        result -= constantOffset;
+        return result;
     }
-    public static double latlonToMeters(Vector2d p1, Vector2d p2)
+    public static Vector2d XYtoLatlon(Vector2d XY)
+    {
+        Vector2d result;
+        XY += constantOffset;
+        result.x = System.Math.Atan(System.Math.Exp(XY.x / 180d * System.Math.PI)) / System.Math.PI * 360d - 90d;
+        result.y = XY.y;
+        return result;
+    }
+    //web
+    public static Vector2d LatLonToWeb(Vector2d latlon,int z)
+    {
+        Vector2d result;
+        latlon *= Mathd.PI/180.0;
+        result.x = -System.Math.Log(System.Math.Tan(Mathd.PI/4.0+ latlon.x/2.0)) + Mathd.PI;        
+        result.y = latlon.y + Mathd.PI;
+
+        result = result * ((256 / (2 * Mathd.PI)) * Mathd.Pow(2,z));
+
+        //result *= 180.0 / Mathd.PI;
+        return result;
+    }
+    public static Vector2d WebToLatLon(Vector2d web,int z)
+    {
+        Vector2d result;
+        //web *= Mathd.PI / 180.0;
+        web = web / ((256 / (2 * Mathd.PI)) * Mathd.Pow(2, z));
+        result.x = 2*System.Math.Atan(System.Math.Exp(-web.x + Mathd.PI)) - Mathd.PI/2.0;
+        result.y = web.y - Mathd.PI;
+
+        result *= 180.0 / Mathd.PI;
+        return result;
+    }
+
+    public static List<byte> getQuadPath(Vector2Int coord, int z)
+    {
+        List<byte> list = new List<byte>();
+        int x = coord.x;
+        int y = coord.y;
+        for (int i = 0; i < z; ++i)
+        {
+            bool bx = GetBit(x,i);
+            bool by = GetBit(y,i);
+
+            if (bx == false && by == false) { list.Add(0); continue; }
+            if (bx == true && by == false) { list.Add(1); continue; }
+            if (bx == false && by == true) { list.Add(2); continue; }
+            if (bx == true && by == true) { list.Add(3); continue; }
+        }
+
+        return list;
+    }
+    public static Vector2Int getQuadCoord(List<byte> list)
+    {
+        Vector2Int result = new Vector2Int(0,0);
+        int z = -1;
+        foreach (var element in list)
+        {
+            ++z;
+            if (element == 0) continue;
+            if (element == 1) {result.x += (int)Mathf.Pow(2, z); continue; }
+            if (element == 2) { result.y += (int)Mathf.Pow(2, z); continue; }
+            if (element == 2) {result.x += (int)Mathf.Pow(2, z); result.y += (int)Mathf.Pow(2, z); continue; }             
+        }
+        return result;
+    }
+    private static bool GetBit(this int b, int bitNumber)
+    {
+        return (b & (1 << bitNumber - 1)) != 0;
+    }
+    /*public static Vector2d LatlonToXY(Vector2d latlon)
+    {
+        Vector2d result;
+        result.x = System.Math.Log(System.Math.Tan((latlon.x + 90d) / 360d * System.Math.PI)) / System.Math.PI * 180d;
+        result.x *= 20037508.34 / 180;
+        result.y = latlon.y * 20037508.34 / 180;
+        result -= constantOffset;
+        return result;
+    }
+    public static Vector2d XYtoLatlon(Vector2d XY)
+    {
+        Vector2d result;
+        XY += constantOffset;
+        result.x = System.Math.Atan(System.Math.Exp(XY.x / 180d * System.Math.PI)) / System.Math.PI * 360d - 90d;
+        result.x *= 180 / 20037508.34;
+        result.y = XY.y * 180 / 20037508.34;
+        return result;
+    }*/
+    /*public static double latlonToMeters(Vector2d p1, Vector2d p2)
     {  // generally used geo measurement function
         var R = 6378.137; // Radius of earth in KM
         var dLat = p2.y * Mathd.PI / 180 - p1.y * Mathd.PI / 180;
@@ -161,7 +259,7 @@ public static class GISparser {
         var c = 2 * Mathd.Atan2(Mathd.Sqrt(a), Mathd.Sqrt(1 - a));
         var d = R * c;
         return d * 1000; // meters
-    }
+    }*/
 
     private static Vector2d constantOffset = new Vector2d(0,0);
 

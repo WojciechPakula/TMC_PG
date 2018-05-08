@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class GISquadtree {
-    public int max = 20;
+    static public int max = 10;
+    static public int totalNodes = 0;
+
     GISquadtree[] nodes = null;
     public int level = 0;
     GISquadtree parent = null;
@@ -14,12 +16,12 @@ public class GISquadtree {
     List<GISway> list = new List<GISway>();
 
     public GISquadtree(GISquadtree par)
-    {       
+    {
+        totalNodes++;
         parent = par;
         if (parent != null)
         {
             level = parent.level + 1;
-            max = parent.max;
         }
     }
 
@@ -32,11 +34,11 @@ public class GISquadtree {
             Vector2d halfsize = size / 2.0;
 
             nodes[0] = new GISquadtree(this);
-            nodes[0].position = new Vector2d(position.x+ halfsize.x, position.y + halfsize.y);
+            nodes[0].position = new Vector2d(position.x, position.y + halfsize.y);
             nodes[0].size = halfsize;
             nodes[1] = new GISquadtree(this);
-            nodes[1].position = new Vector2d(position.x, position.y + halfsize.y);
-            nodes[1].size = halfsize;
+            nodes[1].position = new Vector2d(position.x+ halfsize.x, position.y + halfsize.y);
+            nodes[1].size = halfsize;           
             nodes[2] = new GISquadtree(this);
             nodes[2].position = new Vector2d(position.x, position.y);
             nodes[2].size = halfsize;
@@ -87,21 +89,21 @@ public class GISquadtree {
             }
             tmp = nodes[1].position;
             tmp = node.XY - tmp;
-            if (tmp.x >= 0 && tmp.y >= 0 && tmp.x < nodes[0].size.x && tmp.y < nodes[1].size.y)
+            if (tmp.x >= 0 && tmp.y >= 0 && tmp.x < nodes[1].size.x && tmp.y < nodes[1].size.y)
             {
-                b0 = true;
+                b1 = true;
             }
             tmp = nodes[2].position;
             tmp = node.XY - tmp;
-            if (tmp.x >= 0 && tmp.y >= 0 && tmp.x < nodes[0].size.x && tmp.y < nodes[2].size.y)
+            if (tmp.x >= 0 && tmp.y >= 0 && tmp.x < nodes[2].size.x && tmp.y < nodes[2].size.y)
             {
-                b0 = true;
+                b2 = true;
             }
             tmp = nodes[3].position;
             tmp = node.XY - tmp;
-            if (tmp.x >= 0 && tmp.y >= 0 && tmp.x < nodes[0].size.x && tmp.y < nodes[3].size.y)
+            if (tmp.x >= 0 && tmp.y >= 0 && tmp.x < nodes[3].size.x && tmp.y < nodes[3].size.y)
             {
-                b0 = true;
+                b3 = true;
             }
         }
         if (b0) nodes[0].insert(ele);
@@ -114,5 +116,19 @@ public class GISquadtree {
     {
         if (nodes == null) return true;
         return false;
+    }
+
+    public void clear()
+    {
+        list.Clear();
+        if (nodes == null) return;
+        for (int i = 0; i < nodes.Length; i++)
+        {
+            if (nodes[i] != null)
+            {
+                nodes[i].clear();
+                nodes[i] = null;
+            }
+        }
     }
 }

@@ -16,7 +16,7 @@ public class GISmap : MonoBehaviour {
     void Start () {
         //gisdata = GISparser.LoadOSM(@"G:\POLITECHNIKA\PROJEKTY\#8 Technologie map cyfrowych\maly.osm");
         //gisdata = GISparser.LoadOSM(@"G:\POLITECHNIKA\PROJEKTY\#8 Technologie map cyfrowych\geo3\geo3\TMC_PG\Assets\testowyOSM.osm");
-        
+
         /*gisdata.minLat = 54.3690100;
         gisdata.minLon = 18.6095200;
         gisdata.maxLat = 54.3745700;
@@ -25,6 +25,8 @@ public class GISmap : MonoBehaviour {
         //setPlaneSize();
         //tmpsize = planeSize / 2; inaczej to zrobic
         //setPlane();
+        loadFile("G:\\POLITECHNIKA\\PROJEKTY\\#8 Technologie map cyfrowych\\maly.osm");
+        qt = new GISquadtree(null);
     }
 
     public void loadFile(string text)
@@ -53,6 +55,8 @@ public class GISmap : MonoBehaviour {
     public InputField ipath;
     public InputField ikey;
     public InputField ivalue;
+
+    public GISquadtree qt;
 
     // Update is called once per frame
     void Update () {
@@ -107,6 +111,28 @@ public class GISmap : MonoBehaviour {
         if (Input.GetKey(KeyCode.M))
         {
             czyszczenie();
+        }
+        if (Input.GetKeyDown(KeyCode.T))
+        {
+            //quadtree
+            /*qt.clear();
+            foreach (var way in gisdata.wayContainer)
+            {
+                qt.insert(way);
+            }
+            Debug.Log("zaladowano drzewo");*/
+            Vector2d tmp;
+            tmp = GISparser.LatlonToXY(new Vector2d(-85.06,-180));
+            Debug.Log(tmp.x + " " + tmp.y);
+            tmp = GISparser.LatlonToXY(new Vector2d(85.06,180));
+            Debug.Log(tmp.x + " " + tmp.y);
+
+            tmp = GISparser.LatLonToWeb(new Vector2d(-85.051129, 180),0);
+            Debug.Log("web: " + tmp.x + " " + tmp.y);
+            tmp = GISparser.LatLonToWeb(new Vector2d(0, 0), 0);
+            Debug.Log("web: " + tmp.x + " " + tmp.y);
+            tmp = GISparser.LatLonToWeb(new Vector2d(85.051129, -180), 0);
+            Debug.Log("web: " + tmp.x + " " + tmp.y);
         }
         camUpdate();
         planeUpdate();

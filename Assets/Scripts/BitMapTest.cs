@@ -11,10 +11,10 @@ public class BitMapTest : MonoBehaviour {
     SpriteRenderer rend;
     Texture2D tex;
     // Use this for initialization
-    void Start () {
+    void Awake () {
         rend = GetComponent<SpriteRenderer>();
 
-        tex = new Texture2D(x,y);
+        /*tex = new Texture2D(x,y);
 
         for (int x = 0; x < tex.width; ++x)
         {
@@ -23,18 +23,30 @@ public class BitMapTest : MonoBehaviour {
                 tex.SetPixel(x,y, randomColor());
             }
         }
+        tex.SetPixel(0, 0, Color.black);
+        tex.SetPixel(1, 0, Color.black);
+        tex.SetPixel(2, 0, Color.black);
         tex.filterMode = FilterMode.Point;
         tex.Apply();
 
-        Sprite newSprite = Sprite.Create(tex,new Rect(0,0,tex.width,tex.height),Vector2.one*0.5f);
+        Sprite newSprite = Sprite.Create(tex,new Rect(0,0,tex.width,tex.height),new Vector2(0,0));
 
-        rend.sprite = newSprite;
+        rend.sprite = newSprite;*/
     }
 	
-    Color randomColor()
+    public static Color randomColor()
     {
-        Color c = new Color(Random.Range(0.0f, 1.0f), Random.Range(0.0f, 1.0f), Random.Range(0.0f, 1.0f));
+        Color c = new Color(Random.Range(0f,1f), Random.Range(0f, 1f), Random.Range(0f, 1f));
         return c;
+    }
+
+    public void setTexture(Texture2D tex2)
+    {
+        tex = tex2;
+
+        tex.Apply();
+        Sprite newSprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0, 0));
+        rend.sprite = newSprite;
     }
 
 	// Update is called once per frame
