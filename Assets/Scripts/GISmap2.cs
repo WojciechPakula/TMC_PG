@@ -28,6 +28,55 @@ public class GISmap2 : MonoBehaviour {
 
     Color globalColor = Color.blue;
 
+
+
+    public Dropdown ab;
+    public Dropdown fu;
+
+    List<keyValue> zadania = new List<keyValue>();
+
+    public Text wyswietlaczZadan;
+
+    public void clearAbility()
+    {
+        zadania.Clear();
+        wyswietlaczZadan.text = "";
+    }
+
+    public void addAbility()
+    {
+        int index = ab.value;
+        int m = fu.value;
+
+        string key="";
+        string value="";
+        switch (index)
+        {
+            case 0:
+                key = "amenity";
+                value = "restaurant";
+                break;
+            case 1:
+                key = "emergency";
+                value = "fire_hydrant";
+                break;
+            case 2:
+                key = "natural";
+                value = "tree";
+                break;
+            case 3:
+                key = "bicycle_parking";
+                value = "stands";
+                break;
+        }
+
+        keyValue kv = new keyValue(key, value);
+        if (m == 0) kv.isMax = true; else kv.isMax = false;
+        zadania.Add(kv);
+        string oooo = kv.isMax ? "MAX" : "MIN";
+        wyswietlaczZadan.text += key+" "+value+" "+ oooo+"\n";
+    }
+
     Texture2D generateFullViewTexture()
     {       
         int width = ch2.x - ch1.x+1;
@@ -44,16 +93,60 @@ public class GISmap2 : MonoBehaviour {
 
         var c = Color.cyan;
         //fill
-        for (int x = 0; x < tex.width; ++x)
+        /*for (int x = 0; x < tex.width; ++x)
         {
             for (int y = 0; y < tex.height; ++y)
             {
                 tex.SetPixel(x, y, c);
             }
-        }
+        }*/
         //heatmap
-        float[,] heatmap = new float[resolution.x, resolution.y];
-        
+        //float[,] heatmap = new float[resolution.x, resolution.y];
+        float[,] heatmap = new float[tex.width, tex.height];
+        foreach (var zad in zadania)
+        {
+            float[,] tmpheat;
+            if (zad.isMax) tmpheat = heatmapCreatorMax(ref tex, chunkLow, chunkHigh, zad.key, zad.value);
+            else tmpheat = heatmapCreatorMin(ref tex, chunkLow, chunkHigh, zad.key, zad.value);
+            for (int x = 0; x < tex.width; ++x)
+            {
+                for (int y = 0; y < tex.height; ++y)
+                {
+                    heatmap[x, y] += tmpheat[x, y];
+                }
+            }
+        }
+        //var heat = heatmapCreatorMax(ref tex, chunkLow, chunkHigh, "amenity", "restaurant");
+        //var heat2= heatmapCreatorMin(ref tex, chunkLow, chunkHigh, "emergency", "fire_hydrant");
+
+        /*for (int x = 0; x < tex.width; ++x)
+        {
+            for (int y = 0; y < tex.height; ++y)
+            {
+                heat[x,y] += heat2[x,y];
+            }
+        }*/
+
+        float minvalue = float.PositiveInfinity, maxvalue = float.NegativeInfinity;
+        for (int x = 0; x < tex.width; ++x)
+        {
+            for (int y = 0; y < tex.height; ++y)
+            {
+                var v = heatmap[x,y];
+                if (v < minvalue) minvalue = v;
+                if (v > maxvalue) maxvalue = v;
+                //tex.SetPixel(x, y, c);
+            }
+        }
+        for (int x = 0; x < tex.width; ++x)
+        {
+            for (int y = 0; y < tex.height; ++y)
+            {
+                var v = (heatmap[x, y]- minvalue)/(maxvalue- minvalue);
+                var hc = GISparser.valueToHeatColor(v);
+                tex.SetPixel(x, y, hc);
+            }
+        }
 
         //details
         foreach (var way in gisdata.wayContainer)
@@ -64,26 +157,99 @@ public class GISmap2 : MonoBehaviour {
         return tex;
     }
 
-    float[,] heatmapCreator(Texture2D tex, Vector2d p1, Vector2d p2, string key, string value)
+    float[,] heatmapCreatorMax(ref Texture2D tex, Vector2d p1, Vector2d p2, string key, string value)
     {
         //node.tags[key] == value
         float[,] result = new float[tex.width,tex.height];
+        Vector2d ddd;
+        ddd.x = (p2.x - p1.x) / (p2.x - p1.x);
+        ddd.y = (p2.y - p1.y) / (p2.y - p1.y);       
+
+        List<GISnode> matched = new List<GISnode>();
         foreach (var node in gisdata.nodeContainer)
         {
             try
             {
                 if (node.tags[key] == value)
                 {
-                    for (int x = 0; x < tex.width; ++x)
-                    {
-                        for (int y = 0; y < tex.height; ++y)
-                        {
-                            
-                        }
-                    }
-                } 
-            } catch { }
+                    matched.Add(node);
+                }
+            } catch
+            {
+
+            }
         }
+
+        for (int x = 0; x < tex.width; ++x)
+        {
+            for (int y = 0; y < tex.height; ++y)
+            {
+                result[x, y] = float.PositiveInfinity;
+                foreach (var node in matched)
+                {                                 
+                    //var npos = node.XY;
+                    //npos.x = (npos.x - p1.x) / (p2.x - p1.x) * tex.width;
+                    //npos.y = (npos.y - p1.y) / (p2.y - p1.y) * tex.height;
+                    //int px = (int)npos.x;
+                    //int py = (int)npos.y;
+  
+                    Vector2d web = new Vector2d(((double)x / (double)tex.width) * (p2.x - p1.x) + p1.x, ((double)y / (double)tex.height) * (p2.y - p1.y) + p1.y);
+                    var diff = node.XY - web;
+                    double metry = diff.magnitude * 40075000.0 / 256.0;
+                    if (result[x, y] > metry) result[x, y] = (float)metry;                         
+                }
+            }
+        }
+        
+        return result;
+    }
+
+    float[,] heatmapCreatorMin(ref Texture2D tex, Vector2d p1, Vector2d p2, string key, string value)
+    {
+        //node.tags[key] == value
+        float[,] result = new float[tex.width, tex.height];
+        Vector2d ddd;
+        ddd.x = (p2.x - p1.x) / (p2.x - p1.x);
+        ddd.y = (p2.y - p1.y) / (p2.y - p1.y);
+
+        List<GISnode> matched = new List<GISnode>();
+        foreach (var node in gisdata.nodeContainer)
+        {
+            try
+            {
+                if (node.tags[key] == value)
+                {
+                    matched.Add(node);
+                }
+            }
+            catch
+            {
+
+            }
+        }
+
+        for (int x = 0; x < tex.width; ++x)
+        {
+            for (int y = 0; y < tex.height; ++y)
+            {
+                result[x, y] = float.PositiveInfinity;
+                foreach (var node in matched)
+                {
+                    //var npos = node.XY;
+                    //npos.x = (npos.x - p1.x) / (p2.x - p1.x) * tex.width;
+                    //npos.y = (npos.y - p1.y) / (p2.y - p1.y) * tex.height;
+                    //int px = (int)npos.x;
+                    //int py = (int)npos.y;
+
+                    Vector2d web = new Vector2d(((double)x / (double)tex.width) * (p2.x - p1.x) + p1.x, ((double)y / (double)tex.height) * (p2.y - p1.y) + p1.y);
+                    var diff = node.XY - web;
+                    double metry = diff.magnitude * 40075000.0 / 256.0;
+                    if (result[x, y] > metry) result[x, y] = (float)metry;
+                }
+                result[x, y] *= -1;
+            }
+        }
+
         return result;
     }
 
@@ -432,22 +598,7 @@ public class GISmap2 : MonoBehaviour {
         }
         if (Input.GetKeyDown(KeyCode.L))
         {
-            loadFile(ipath.text);
-            //loadFile("G:\\POLITECHNIKA\\PROJEKTY\\#8 Technologie map cyfrowych\\maly.osm");
-            qt = new GISquadtree(null);
-            qt.size = new Vector2d(256, 256);
-            qt.position = new Vector2d(0, 0);
-            foreach (var way in gisdata.wayContainer)
-            {
-                qt.insert(way);
-            }
-
-            //gisdata.maxLat
-
-            //ustawienie kamery tam gdzie coś jest
-            Vector2d sr = new Vector2d((gisdata.maxLat + gisdata.minLat) / 2.0, (gisdata.maxLon + gisdata.minLon) / 2.0);
-            var cameraStartPos = GISparser.LatLonToWeb(sr);
-            ghostCamera.transform.position = new Vector3((float)cameraStartPos.x, cam.transform.position.y, -(float)cameraStartPos.y);           
+            ladowaniePrzyciskiem();
         }
         if (Input.GetKeyDown(KeyCode.T))
         {
@@ -484,6 +635,27 @@ public class GISmap2 : MonoBehaviour {
         }
         
     }
+
+    public void ladowaniePrzyciskiem()
+    {
+        loadFile(ipath.text);
+        //loadFile("G:\\POLITECHNIKA\\PROJEKTY\\#8 Technologie map cyfrowych\\maly.osm");
+        qt = new GISquadtree(null);
+        qt.size = new Vector2d(256, 256);
+        qt.position = new Vector2d(0, 0);
+        foreach (var way in gisdata.wayContainer)
+        {
+            qt.insert(way);
+        }
+
+        //gisdata.maxLat
+
+        //ustawienie kamery tam gdzie coś jest
+        Vector2d sr = new Vector2d((gisdata.maxLat + gisdata.minLat) / 2.0, (gisdata.maxLon + gisdata.minLon) / 2.0);
+        var cameraStartPos = GISparser.LatLonToWeb(sr);
+        ghostCamera.transform.position = new Vector3((float)cameraStartPos.x, cam.transform.position.y, -(float)cameraStartPos.y);
+    }
+
     //kamera
     private Vector3 tmpDirection = Vector3.zero;
     private GameObject ghostCamera = null;
@@ -694,3 +866,14 @@ public class chunkContainer
     }
 }*/
 
+class keyValue
+{
+    public string key;
+    public string value;
+    public bool isMax;
+    public keyValue(string k, string v)
+    {
+        key = k;
+        value = v;
+    }
+}

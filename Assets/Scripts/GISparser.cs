@@ -284,7 +284,7 @@ public static class GISparser {
 
         if (value > 1) value = 1;
         if (value < 0) value = 0;
-        value = value * 7;
+        value = value * 6;
         int seg = (int)value;
         value = value - seg;
         if (seg == 0) c = Color.Lerp(c0,c1, value);
