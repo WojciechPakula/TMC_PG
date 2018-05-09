@@ -644,7 +644,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   zoom: 14
   cam: {fileID: 1379097368}
-  ipath: {fileID: 0}
+  ipath: {fileID: 15427885}
 --- !u!4 &1074673643
 Transform:
   m_ObjectHideFlags: 0
