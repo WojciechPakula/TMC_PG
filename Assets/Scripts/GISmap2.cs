@@ -17,10 +17,43 @@ public class GISmap2 : MonoBehaviour {
     int layerId = 0;
 
     //punkty wyznaczają prostokąt który zawiera widoczne chunki
-    Vector2Int ch1;
-    Vector2Int ch2;
+    Vector2Int ch1;//min
+    Vector2Int ch2;//max
 
     public InputField ipath;
+
+    public GameObject c0, c1;
+
+    Texture2D generateFullViewTexture()
+    {       
+        int width = ch2.x - ch1.x+1;
+        int height = ch2.y - ch1.y+1;
+
+        Vector2d range = getCameraRange();
+        Vector2d p1 = new Vector2d(-(float)range.x / 2f + cam.transform.position.x, -(float)range.y / 2f + -cam.transform.position.z);
+        Vector2d p2 = new Vector2d((float)range.x / 2f + cam.transform.position.x, (float)range.y / 2f + -cam.transform.position.z);
+
+        Texture2D tex = new Texture2D(width*256, height*256);
+
+        Vector2d chunkLow = new Vector2d(((double)(ch1.x) / (double)(1 << zoom)) * 256.0, ((double)(ch1.y) / (double)(1 << zoom)) * 256.0);
+        Vector2d chunkHigh = new Vector2d(((double)(ch2.x+1) / (double)(1 << zoom)) * 256.0, ((double)(ch2.y+1) / (double)(1 << zoom)) * 256.0);
+
+        var c = Color.cyan;
+        for (int x = 0; x < tex.width; ++x)
+        {
+            for (int y = 0; y < tex.height; ++y)
+            {
+                tex.SetPixel(x, y, c);
+            }
+        }
+
+        foreach (var way in gisdata.wayContainer)
+        {
+            drawWayOptimal(ref tex, way, chunkLow, chunkHigh);
+        }
+
+        return tex;
+    }
 
     /*private void ExecuteInForeground(Thread main)
     {
@@ -71,7 +104,7 @@ public class GISmap2 : MonoBehaviour {
         {
             for (int y = 0; y < 256; ++y)
             {
-                tex.SetPixel(x, y, c);
+                tex.SetPixel(x, y, c);               
             }
         }
 
@@ -83,8 +116,18 @@ public class GISmap2 : MonoBehaviour {
         }
 
 
+        if (true)
+        {
+            Color bor = Color.gray;
+            for (int i = 0; i < 256; ++i)
+            {
+                tex.SetPixel(0, i, bor);
+                tex.SetPixel(255, i, bor);
+                tex.SetPixel(i, 0, bor);
+                tex.SetPixel(i, 255, bor);
+            }
+        }
 
-        
         return tex;
     }
 
@@ -138,16 +181,16 @@ public class GISmap2 : MonoBehaviour {
                 Vector2d a1 = node.XY;
                 pointsToBorder(ref a0, ref a1, chunkLow, chunkHigh);
                 var p0 = new Vector2Int();
-                p0.x = (int)((pprev.XY.x - chunkLow.x) / (chunkHigh.x - chunkLow.x) * 256.0);
-                p0.y = (int)((pprev.XY.y - chunkLow.y) / (chunkHigh.y - chunkLow.y) * 256.0);
+                p0.x = (int)((pprev.XY.x - chunkLow.x) / (chunkHigh.x - chunkLow.x) * tex.width);
+                p0.y = (int)((pprev.XY.y - chunkLow.y) / (chunkHigh.y - chunkLow.y) * tex.height);
                 var p1 = new Vector2Int();
-                p1.x = (int)((node.XY.x - chunkLow.x) / (chunkHigh.x - chunkLow.x) * 256.0);
-                p1.y = (int)((node.XY.y - chunkLow.y) / (chunkHigh.y - chunkLow.y) * 256.0);               
+                p1.x = (int)((node.XY.x - chunkLow.x) / (chunkHigh.x - chunkLow.x) * tex.width);
+                p1.y = (int)((node.XY.y - chunkLow.y) / (chunkHigh.y - chunkLow.y) * tex.height);               
                 drawLine(ref tex, p0, p1, Color.blue);
             }
             //koniec
             pprev = node;
-        }
+        }       
     }
 
     void drawLine(ref Texture2D tex, Vector2Int p0, Vector2Int p1, Color c)
@@ -318,7 +361,7 @@ public class GISmap2 : MonoBehaviour {
             else
             {
                 oldzoom = zoom;
-                layerId++;
+                ++layerId;
             }
         }
         updateCamera();
@@ -372,6 +415,40 @@ public class GISmap2 : MonoBehaviour {
             var cameraStartPos = GISparser.LatLonToWeb(sr);
             ghostCamera.transform.position = new Vector3((float)cameraStartPos.x, cam.transform.position.y, -(float)cameraStartPos.y);           
         }
+        if (Input.GetKeyDown(KeyCode.T))
+        {
+            Vector2d chunkLow = new Vector2d(((double)(ch1.x) / (double)(1 << zoom)) * 256.0, ((double)(ch1.y) / (double)(1 << zoom)) * 256.0);
+            Vector2d chunkHigh = new Vector2d(((double)(ch2.x) / (double)(1 << zoom)) * 256.0, ((double)(ch2.y) / (double)(1 << zoom)) * 256.0);
+
+            int size = (1 << zoom);
+            double length = 256.0 / (double)size;
+
+            var go = setPlane(new Vector2d(chunkLow.x, -chunkLow.y), length);//tworzy chunki tylko gdy nie istnieją
+            var spr = go.GetComponent<SpriteRenderer>();
+            var com = go.GetComponent<BitMapTest>();
+            spr.sortingOrder = 1000+layerId;
+            com.setTexture(generateFullViewTexture()); 
+        }
+        if (Input.GetKeyDown(KeyCode.U))
+        {
+            int size = (1 << zoom);
+            double length = 256.0 / (double)size;
+            var o = setPlane(new Vector2d(0, 0), length);
+            var bt = o.GetComponent<BitMapTest>();
+            var c = Color.cyan; Texture2D tex = new Texture2D(256*2, 256*2);
+
+            
+
+            for (int x = 0; x < 256*2; ++x)
+            {
+                for (int y = 0; y < 256*2; ++y)
+                {
+                    tex.SetPixel(x, y, BitMapTest.randomColor());
+                }
+            }
+            bt.setTexture(tex);
+        }
+        
     }
     //kamera
     private Vector3 tmpDirection = Vector3.zero;
@@ -437,9 +514,9 @@ public class GISmap2 : MonoBehaviour {
     }*/
 
     void updateChunks()
-    {
-        if (gisdata == null) return;
+    {       
         var requestedChunks = getChunkCoordsList();
+        if (gisdata == null) return;
 
         int size = (1 << zoom);
         double length = 256.0 / (double)size;
@@ -489,6 +566,9 @@ public class GISmap2 : MonoBehaviour {
         Vector2d range = getCameraRange();
         Vector2d p1 = new Vector2d(-(float)range.x / 2f + cam.transform.position.x, -(float)range.y / 2f + -cam.transform.position.z);
         Vector2d p2 = new Vector2d((float)range.x / 2f + cam.transform.position.x, (float)range.y / 2f + -cam.transform.position.z);
+
+        /*c0.transform.position = new Vector3((float)p1.x,0, -(float)p1.y);
+        c1.transform.position = new Vector3((float)p2.x, 0, -(float)p2.y);*/
 
         ch1 = worldPosToChunk(p1);
         ch2 = worldPosToChunk(p2);
@@ -578,3 +658,4 @@ public class chunkContainer
         this.tex = tex;
     }
 }*/
+
