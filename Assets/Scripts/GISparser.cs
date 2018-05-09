@@ -270,5 +270,37 @@ public static class GISparser {
         constantOffset.y = y;
     }
 
+    static Color c0 = new Color(0, 0, 0, 1);
+    static Color c1 = new Color(0, 0, 1, 1);
+    static Color c2 = new Color(0, 1, 1, 1);
+    static Color c3 = new Color(0, 1, 0, 1);
+    static Color c4 = new Color(1, 1, 0, 1);
+    static Color c5 = new Color(1, 0, 0, 1);
+    static Color c6 = new Color(1, 1, 1, 1);
 
+    public static Color valueToHeatColor(float value)
+    {
+        Color c = new Color();
+
+        if (value > 1) value = 1;
+        if (value < 0) value = 0;
+        value = value * 7;
+        int seg = (int)value;
+        value = value - seg;
+        if (seg == 0) c = Color.Lerp(c0,c1, value);
+
+        switch (seg)
+        {
+            case 0: c = Color.Lerp(c0, c1, value); break;
+            case 1: c = Color.Lerp(c1, c2, value); break;
+            case 2: c = Color.Lerp(c2, c3, value); break;
+            case 3: c = Color.Lerp(c3, c4, value); break;
+            case 4: c = Color.Lerp(c4, c5, value); break;
+            case 5: c = Color.Lerp(c5, c6, value); break;
+            case 6: c = c6; break;
+            default: c = c0; break;
+        }
+
+        return c;
+    }
 }

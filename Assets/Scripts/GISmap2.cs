@@ -24,6 +24,10 @@ public class GISmap2 : MonoBehaviour {
 
     public GameObject c0, c1;
 
+    GameObject fullPlane = null;
+
+    Color globalColor = Color.blue;
+
     Texture2D generateFullViewTexture()
     {       
         int width = ch2.x - ch1.x+1;
@@ -39,6 +43,7 @@ public class GISmap2 : MonoBehaviour {
         Vector2d chunkHigh = new Vector2d(((double)(ch2.x+1) / (double)(1 << zoom)) * 256.0, ((double)(ch2.y+1) / (double)(1 << zoom)) * 256.0);
 
         var c = Color.cyan;
+        //fill
         for (int x = 0; x < tex.width; ++x)
         {
             for (int y = 0; y < tex.height; ++y)
@@ -46,13 +51,40 @@ public class GISmap2 : MonoBehaviour {
                 tex.SetPixel(x, y, c);
             }
         }
+        //heatmap
+        float[,] heatmap = new float[resolution.x, resolution.y];
+        
 
+        //details
         foreach (var way in gisdata.wayContainer)
         {
             drawWayOptimal(ref tex, way, chunkLow, chunkHigh);
         }
 
         return tex;
+    }
+
+    float[,] heatmapCreator(Texture2D tex, Vector2d p1, Vector2d p2, string key, string value)
+    {
+        //node.tags[key] == value
+        float[,] result = new float[tex.width,tex.height];
+        foreach (var node in gisdata.nodeContainer)
+        {
+            try
+            {
+                if (node.tags[key] == value)
+                {
+                    for (int x = 0; x < tex.width; ++x)
+                    {
+                        for (int y = 0; y < tex.height; ++y)
+                        {
+                            
+                        }
+                    }
+                } 
+            } catch { }
+        }
+        return result;
     }
 
     /*private void ExecuteInForeground(Thread main)
@@ -186,7 +218,7 @@ public class GISmap2 : MonoBehaviour {
                 var p1 = new Vector2Int();
                 p1.x = (int)((node.XY.x - chunkLow.x) / (chunkHigh.x - chunkLow.x) * tex.width);
                 p1.y = (int)((node.XY.y - chunkLow.y) / (chunkHigh.y - chunkLow.y) * tex.height);               
-                drawLine(ref tex, p0, p1, Color.blue);
+                drawLine(ref tex, p0, p1, globalColor);
             }
             //koniec
             pprev = node;
@@ -322,7 +354,8 @@ public class GISmap2 : MonoBehaviour {
         //loadFile("G:\\POLITECHNIKA\\PROJEKTY\\#8 Technologie map cyfrowych\\maly.osm"); 
         ghostCamera = new GameObject();
         ghostCamera.transform.position = cam.transform.position;
-        oldzoom = zoom;             
+        oldzoom = zoom;
+        
     }
   
 
@@ -362,6 +395,7 @@ public class GISmap2 : MonoBehaviour {
             {
                 oldzoom = zoom;
                 ++layerId;
+                if (fullPlane != null) { Destroy(fullPlane); fullPlane = null; }
             }
         }
         updateCamera();
@@ -427,17 +461,17 @@ public class GISmap2 : MonoBehaviour {
             var spr = go.GetComponent<SpriteRenderer>();
             var com = go.GetComponent<BitMapTest>();
             spr.sortingOrder = 1000+layerId;
-            com.setTexture(generateFullViewTexture()); 
+            com.setTexture(generateFullViewTexture());
+            if (fullPlane != null) Destroy(fullPlane);
+            fullPlane = go;
         }
         if (Input.GetKeyDown(KeyCode.U))
         {
-            int size = (1 << zoom);
+            /*int size = (1 << zoom);
             double length = 256.0 / (double)size;
             var o = setPlane(new Vector2d(0, 0), length);
             var bt = o.GetComponent<BitMapTest>();
-            var c = Color.cyan; Texture2D tex = new Texture2D(256*2, 256*2);
-
-            
+            var c = Color.cyan; Texture2D tex = new Texture2D(256*2, 256*2);           
 
             for (int x = 0; x < 256*2; ++x)
             {
@@ -446,7 +480,7 @@ public class GISmap2 : MonoBehaviour {
                     tex.SetPixel(x, y, BitMapTest.randomColor());
                 }
             }
-            bt.setTexture(tex);
+            bt.setTexture(tex);   */        
         }
         
     }
@@ -514,7 +548,8 @@ public class GISmap2 : MonoBehaviour {
     }*/
 
     void updateChunks()
-    {       
+    {
+        globalColor = Color.black;
         var requestedChunks = getChunkCoordsList();
         if (gisdata == null) return;
 

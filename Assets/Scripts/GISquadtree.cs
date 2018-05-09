@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class GISquadtree {
-    static public int max = 10;
+    static public int max = 50;
     static public int totalNodes = 0;
 
     GISquadtree[] nodes = null;
