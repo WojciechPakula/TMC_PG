@@ -78,7 +78,8 @@ public class GISmap2 : MonoBehaviour {
         foreach (var way in waysList)
         {
             //lineChecker(Vector2d l1, Vector2d l2, Vector2d p, float thickness);
-            drawWay(ref tex, way, chunkLow, chunkHigh);
+            //drawWay(ref tex, way, chunkLow, chunkHigh);
+            drawWayOptimal(ref tex, way, chunkLow, chunkHigh);
         }
 
 
@@ -123,6 +124,144 @@ public class GISmap2 : MonoBehaviour {
             pprev = p;
         }
     }
+
+    void drawWayOptimal(ref Texture2D tex, GISway way, Vector2d chunkLow, Vector2d chunkHigh)
+    {
+        GISnode pprev = null;
+        foreach (var node in way.localNodeContainer)
+        {            
+            if (pprev == null) { pprev = node; continue; }
+            bool czyRysowac = checkLineInBox(pprev.XY, node.XY, chunkLow, chunkHigh);
+            if (czyRysowac)
+            {
+                Vector2d a0 = pprev.XY;
+                Vector2d a1 = node.XY;
+                pointsToBorder(ref a0, ref a1, chunkLow, chunkHigh);
+                var p0 = new Vector2Int();
+                p0.x = (int)((pprev.XY.x - chunkLow.x) / (chunkHigh.x - chunkLow.x) * 256.0);
+                p0.y = (int)((pprev.XY.y - chunkLow.y) / (chunkHigh.y - chunkLow.y) * 256.0);
+                var p1 = new Vector2Int();
+                p1.x = (int)((node.XY.x - chunkLow.x) / (chunkHigh.x - chunkLow.x) * 256.0);
+                p1.y = (int)((node.XY.y - chunkLow.y) / (chunkHigh.y - chunkLow.y) * 256.0);               
+                drawLine(ref tex, p0, p1, Color.blue);
+            }
+            //koniec
+            pprev = node;
+        }
+    }
+
+    void drawLine(ref Texture2D tex, Vector2Int p0, Vector2Int p1, Color c)
+    {
+        int x = p0.x, y = p0.y, x2 = p1.x, y2 = p1.y;
+
+        int w = x2 - x;
+        int h = y2 - y;
+        int dx1 = 0, dy1 = 0, dx2 = 0, dy2 = 0;
+        if (w < 0) dx1 = -1; else if (w > 0) dx1 = 1;
+        if (h < 0) dy1 = -1; else if (h > 0) dy1 = 1;
+        if (w < 0) dx2 = -1; else if (w > 0) dx2 = 1;
+        int longest = Mathf.Abs(w);
+        int shortest = Mathf.Abs(h);
+        if (!(longest > shortest))
+        {
+            longest = Mathf.Abs(h);
+            shortest = Mathf.Abs(w);
+            if (h < 0) dy2 = -1; else if (h > 0) dy2 = 1;
+            dx2 = 0;
+        }
+        int numerator = longest >> 1;
+        for (int i = 0; i <= longest; i++)
+        {
+            tex.SetPixel(x,y,c);
+            numerator += shortest;
+            if (!(numerator < longest))
+            {
+                numerator -= longest;
+                x += dx1;
+                y += dy1;
+            }
+            else
+            {
+                x += dx2;
+                y += dy2;
+            }
+        }
+    }   
+
+    //nie zmienia punktów które są w obszarze, ale jak są poza nim to je dociąga do krawędzi
+    void pointsToBorder(ref Vector2d p0, ref Vector2d p1, Vector2d bl, Vector2d bh)
+    {
+        bool b0 = isInsideBorder(p0, bl, bh);
+        bool b1 = isInsideBorder(p1, bl, bh);
+        if (!b0 || !b1)
+        {
+            Vector2d blu = new Vector2d(bl.x, bh.y);
+            Vector2d bhd = new Vector2d(bh.x, bl.y);
+
+            var lewy = intersection(p0,p1,bl,blu);
+            var gorny = intersection(p0, p1, blu, bh);
+            var prawy = intersection(p0, p1, bh, bhd);
+            var dolny = intersection(p0, p1, bhd, bh);
+
+            bool lb = false, gb = false, pb = false, db = false;
+
+            if (lewy.y > bl.y && lewy.y < blu.y) lb = true;
+            if (gorny.x > blu.x && gorny.x < bh.x) gb = true;
+            if (prawy.y > bhd.y && prawy.y < bh.y) pb = true;
+            if (dolny.x > bl.x && dolny.x < bhd.x) db = true;
+
+            if (!b0) if (lb && p0.x < bl.x) p0 = lewy;
+            else
+            if (gb && p0.y > blu.y) p0 = gorny;
+            else
+            if (pb && p0.x > bh.x) p0 = prawy;
+            else 
+            if (db && p0.y < bl.y) p0 = dolny;
+
+            if (!b1) if (lb && p1.x < bl.x) p1 = lewy;
+            else
+            if (gb && p1.y > blu.y) p1 = gorny;
+            else
+            if (pb && p1.x > bh.x) p1 = prawy;
+            else
+            if (db && p1.y < bl.y) p1 = dolny;
+        }
+    }
+
+    //p1 i p2 wyznaczają prostą, p3 i p4 drugą prostą. Zwraca punkt przecięcia
+    Vector2d intersection(Vector2d p1, Vector2d p2, Vector2d p3, Vector2d p4)
+    {
+        Vector2d result = new Vector2d();
+        var mianownik = ((p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x));
+        result.x = ((p1.x * p2.y - p1.y * p2.x) * (p3.x - p4.x) - (p1.x - p2.x) * (p3.x * p4.y - p3.y * p4.x)) / mianownik;
+        result.y = ((p1.x * p2.y - p1.y * p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x * p4.y - p3.y * p4.x)) / mianownik;
+        return result;
+    }
+
+    bool isInsideBorder(Vector2d p, Vector2d bl, Vector2d bh)
+    {
+        if (p.x >= bl.x && p.x <= bh.x && p.y >= bl.y && p.y <= bh.y) return true;
+        return false;
+    }
+
+    //sprawdza czy linia jest obecna w chunku
+    bool checkLineInBox(Vector2d p0, Vector2d p1, Vector2d bl, Vector2d bh)
+    {
+        if (p0.x < bl.x && p1.x < bl.x) return false;
+        if (p0.y < bl.y && p1.y < bl.y) return false;
+        if (p0.x > bh.x && p1.x > bh.x) return false;
+        if (p0.y > bh.y && p1.y > bh.y) return false;
+        //możliwe przecięcie
+        //duża złożoność!!!
+        Vector2d blu = new Vector2d(bl.x, bh.y);
+        Vector2d bhd = new Vector2d(bh.x, bl.y);
+
+        var lewy = intersection(p0, p1, bl, blu);if (lewy.y > bl.y && lewy.y < blu.y) return true;
+        var gorny = intersection(p0, p1, blu, bh);if (gorny.x > blu.x && gorny.x < bh.x) return true;
+        var prawy = intersection(p0, p1, bh, bhd);if (prawy.y > bhd.y && prawy.y < bh.y) return true;
+        var dolny = intersection(p0, p1, bhd, bh);if (dolny.x > bl.x && dolny.x < bhd.x) return true;
+        return false;
+    }    
 
     Thread thread;
     // Use this for initialization
@@ -216,8 +355,8 @@ public class GISmap2 : MonoBehaviour {
         }
         if (Input.GetKeyDown(KeyCode.L))
         {
-            loadFile(ipath.text);
-            //loadFile("G:\\POLITECHNIKA\\PROJEKTY\\#8 Technologie map cyfrowych\\maly.osm");
+            //loadFile(ipath.text);
+            loadFile("G:\\POLITECHNIKA\\PROJEKTY\\#8 Technologie map cyfrowych\\maly.osm");
             qt = new GISquadtree(null);
             qt.size = new Vector2d(256, 256);
             qt.position = new Vector2d(0, 0);
