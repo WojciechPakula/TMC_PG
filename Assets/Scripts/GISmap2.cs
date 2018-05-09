@@ -355,8 +355,8 @@ public class GISmap2 : MonoBehaviour {
         }
         if (Input.GetKeyDown(KeyCode.L))
         {
-            //loadFile(ipath.text);
-            loadFile("G:\\POLITECHNIKA\\PROJEKTY\\#8 Technologie map cyfrowych\\maly.osm");
+            loadFile(ipath.text);
+            //loadFile("G:\\POLITECHNIKA\\PROJEKTY\\#8 Technologie map cyfrowych\\maly.osm");
             qt = new GISquadtree(null);
             qt.size = new Vector2d(256, 256);
             qt.position = new Vector2d(0, 0);
