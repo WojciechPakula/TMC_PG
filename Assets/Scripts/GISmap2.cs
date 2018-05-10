@@ -602,19 +602,7 @@ public class GISmap2 : MonoBehaviour {
         }
         if (Input.GetKeyDown(KeyCode.T))
         {
-            Vector2d chunkLow = new Vector2d(((double)(ch1.x) / (double)(1 << zoom)) * 256.0, ((double)(ch1.y) / (double)(1 << zoom)) * 256.0);
-            Vector2d chunkHigh = new Vector2d(((double)(ch2.x) / (double)(1 << zoom)) * 256.0, ((double)(ch2.y) / (double)(1 << zoom)) * 256.0);
-
-            int size = (1 << zoom);
-            double length = 256.0 / (double)size;
-
-            var go = setPlane(new Vector2d(chunkLow.x, -chunkLow.y), length);//tworzy chunki tylko gdy nie istnieją
-            var spr = go.GetComponent<SpriteRenderer>();
-            var com = go.GetComponent<BitMapTest>();
-            spr.sortingOrder = 1000+layerId;
-            com.setTexture(generateFullViewTexture());
-            if (fullPlane != null) Destroy(fullPlane);
-            fullPlane = go;
+            heatMapaZPrzycisku();
         }
         if (Input.GetKeyDown(KeyCode.U))
         {
@@ -634,6 +622,23 @@ public class GISmap2 : MonoBehaviour {
             bt.setTexture(tex);   */        
         }
         
+    }
+
+    public void heatMapaZPrzycisku()
+    {
+        Vector2d chunkLow = new Vector2d(((double)(ch1.x) / (double)(1 << zoom)) * 256.0, ((double)(ch1.y) / (double)(1 << zoom)) * 256.0);
+        Vector2d chunkHigh = new Vector2d(((double)(ch2.x) / (double)(1 << zoom)) * 256.0, ((double)(ch2.y) / (double)(1 << zoom)) * 256.0);
+
+        int size = (1 << zoom);
+        double length = 256.0 / (double)size;
+
+        var go = setPlane(new Vector2d(chunkLow.x, -chunkLow.y), length);//tworzy chunki tylko gdy nie istnieją
+        var spr = go.GetComponent<SpriteRenderer>();
+        var com = go.GetComponent<BitMapTest>();
+        spr.sortingOrder = 1000 + layerId;
+        com.setTexture(generateFullViewTexture());
+        if (fullPlane != null) Destroy(fullPlane);
+        fullPlane = go;
     }
 
     public void ladowaniePrzyciskiem()
@@ -659,7 +664,7 @@ public class GISmap2 : MonoBehaviour {
     //kamera
     private Vector3 tmpDirection = Vector3.zero;
     private GameObject ghostCamera = null;
-    private const float MoveVelocity = 50.0f;
+    private const float MoveVelocity = 80.0f;
     private float tmpsize = 5;
     //Gwałtowność ruchów
     private const float Rapidity = 5f;
