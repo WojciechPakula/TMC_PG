@@ -351,7 +351,7 @@ public class GISmap2 : MonoBehaviour {
                         bool rysuj = GISparser.lineChecker((Vector2d)pprev, p, new Vector2d(x,y), thickness);
                         if (rysuj)
                         {
-                            tex.SetPixel(x,y,Color.black);
+                            tex.SetPixel(x,y,Color.black);                           
                         }
                     }
                 }
@@ -382,8 +382,10 @@ public class GISmap2 : MonoBehaviour {
                 p0.y = (int)((pprev.XY.y - chunkLow.y) / (chunkHigh.y - chunkLow.y) * tex.height);
                 var p1 = new Vector2Int();
                 p1.x = (int)((node.XY.x - chunkLow.x) / (chunkHigh.x - chunkLow.x) * tex.width);
-                p1.y = (int)((node.XY.y - chunkLow.y) / (chunkHigh.y - chunkLow.y) * tex.height);               
+                p1.y = (int)((node.XY.y - chunkLow.y) / (chunkHigh.y - chunkLow.y) * tex.height);
                 drawLine(ref tex, p0, p1, globalColor);
+               
+                   
             }
             //koniec
             pprev = node;
@@ -412,7 +414,8 @@ public class GISmap2 : MonoBehaviour {
         int numerator = longest >> 1;
         for (int i = 0; i <= longest; i++)
         {
-            tex.SetPixel(x,y,c);
+            if (!(x < 0 || y < 0 || x > 255 || y > 255))
+                tex.SetPixel(x,y,c);
             numerator += shortest;
             if (!(numerator < longest))
             {
@@ -428,7 +431,7 @@ public class GISmap2 : MonoBehaviour {
         }
     }   
 
-    //nie zmienia punktów które są w obszarze, ale jak są poza nim to je dociąga do krawędzi
+    //nie zmienia punktów które są w obszarze, ale jak są poza nim to je dociąga do krawędzi (nie działa)
     void pointsToBorder(ref Vector2d p0, ref Vector2d p1, Vector2d bl, Vector2d bh)
     {
         bool b0 = isInsideBorder(p0, bl, bh);
@@ -642,8 +645,8 @@ public class GISmap2 : MonoBehaviour {
 
     public void ladowaniePrzyciskiem()
     {
-        loadFile(ipath.text);
-        //loadFile("G:\\POLITECHNIKA\\PROJEKTY\\#8 Technologie map cyfrowych\\maly.osm");
+        //loadFile(ipath.text);
+        loadFile("G:\\POLITECHNIKA\\PROJEKTY\\#8 Technologie map cyfrowych\\maly.osm");
         qt = new GISquadtree(null);
         qt.size = new Vector2d(256, 256);
         qt.position = new Vector2d(0, 0);
