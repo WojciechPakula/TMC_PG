@@ -4,10 +4,13 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Xml.Serialization;
 using UnityEngine;
 
 public static class GISparser {
+    public static string webImagesPath = @"c:\tmp\";
+
     public static GISdata LoadOSM(string path)
     {        
         GISdata loadedData = new GISdata();
@@ -194,6 +197,11 @@ public static class GISparser {
         return result;
     }
 
+    public static List<byte> getQuadPath(int x, int y, int z)
+    {        
+        return getQuadPath(new Vector2Int(x,y), z);
+    }
+
     public static List<byte> getQuadPath(Vector2Int coord, int z)
     {
         List<byte> list = new List<byte>();
@@ -302,5 +310,86 @@ public static class GISparser {
         }
 
         return c;
+    }
+
+    public static Texture2D testOSMpng()
+    {
+        string filePath = @"C:\Users\Wojciech Pakuła\Desktop\5220.png";
+        Texture2D tex = null;
+        byte[] fileData;
+
+        if (File.Exists(filePath))
+        {
+            fileData = File.ReadAllBytes(filePath);
+            tex = new Texture2D(2, 2);
+            tex.LoadImage(fileData); //..this will auto-resize the texture dimensions.            
+        }
+        return tex;
+    }
+
+    public static Texture2D downloadOSMpng(int x, int y, int z)
+    {
+        //string url = @"http://a.tile.openstreetmap.org/14/9033/5220.png";
+        string url = @"http://a.tile.openstreetmap.org/" + z + @"/" + x + @"/" + y + @".png";
+        string name = "OSM"+z + "." + x + "." + y + ".png";
+        string filePath = @"c:\tmp\" + name;
+        Texture2D tex = null;
+        byte[] fileData;
+
+        using (WebClient client = new WebClient())
+        {
+            client.DownloadFile(new Uri(url), filePath);
+
+            if (File.Exists(filePath))
+            {
+                fileData = File.ReadAllBytes(filePath);
+                tex = new Texture2D(2, 2);
+                tex.LoadImage(fileData); //..this will auto-resize the texture dimensions.            
+            }
+        }
+        return flipYTexture(tex);
+    }
+
+    public static Texture2D downloadBINGpng(int x, int y, int z)
+    {
+        //string url = @"https://t.ssl.ak.dynamic.tiles.virtualearth.net/comp/ch/31?mkt=pl-PL&it=A,G,RL&shading=hill&n=z&og=268&c4w=1";
+        var qpath = getQuadPath(x, y, z);
+        string qpaths = "";
+        foreach (var ele in qpath)
+        {
+            qpaths += ele.ToString();
+        }
+        string url = @"http://t.ssl.ak.dynamic.tiles.virtualearth.net/comp/ch/"+ qpaths + @"?mkt=pl-PL&it=A,G,RL&shading=hill&n=z&og=268&c4w=1";
+        string name = "BING" + z + "." + x + "." + y + ".png";
+        string filePath = @"c:\tmp\" + name;
+        Texture2D tex = null;
+        byte[] fileData;
+
+        using (WebClient client = new WebClient())
+        {
+            client.DownloadFile(new Uri(url), filePath);
+
+            if (File.Exists(filePath))
+            {
+                fileData = File.ReadAllBytes(filePath);
+                tex = new Texture2D(2, 2);
+                tex.LoadImage(fileData); //..this will auto-resize the texture dimensions.            
+            }
+        }
+        return flipYTexture(tex);
+    }
+
+    public static Texture2D flipYTexture(Texture2D t)
+    {
+        Texture2D result = new Texture2D(t.width,t.height);
+        for (int x = 0; x < t.width; ++x)
+        {
+            for (int y = 0; y < t.height; ++y)
+            {
+                result.SetPixel(x,y, t.GetPixel(x, t.height-y-1));
+            }
+        }
+        //result.Apply();
+        return result;
     }
 }

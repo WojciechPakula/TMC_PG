@@ -291,7 +291,7 @@ public class GISmap2 : MonoBehaviour {
         var path = GISparser.getQuadPath(new Vector2Int(cx, cy), z);
         var waysList = qt.getObjects(path);
 
-        
+        //return GISparser.downloadBINGpng(cx,cy,z);
 
         Vector2d chunkLow = new Vector2d(((double)(cx)/ (double)(1 << z))*256.0, ((double)(cy) / (double)(1 << z)) * 256.0);
         Vector2d chunkHigh = new Vector2d(((double)(cx+1) / (double)(1 << z)) * 256.0, ((double)(cy+1) / (double)(1 << z)) * 256.0);
@@ -313,7 +313,7 @@ public class GISmap2 : MonoBehaviour {
         }
 
 
-        if (true)
+        if (false)
         {
             Color bor = Color.gray;
             for (int i = 0; i < 256; ++i)
@@ -523,7 +523,8 @@ public class GISmap2 : MonoBehaviour {
         ghostCamera = new GameObject();
         ghostCamera.transform.position = cam.transform.position;
         oldzoom = zoom;
-        
+        //var del = new GISlayer();
+        //del.renderSegment(0, 0, 0);
     }
   
 
@@ -558,7 +559,7 @@ public class GISmap2 : MonoBehaviour {
         {  //zoom uległ zmianie
             if (zoom > 20) zoom = oldzoom;
             else
-            if (zoom < 0) zoom = oldzoom;
+            if (zoom < 1) zoom = oldzoom;
             else
             {
                 oldzoom = zoom;

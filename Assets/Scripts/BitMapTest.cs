@@ -14,7 +14,7 @@ public class BitMapTest : MonoBehaviour {
     void Awake () {
         rend = GetComponent<SpriteRenderer>();
 
-        /*tex = new Texture2D(x,y);
+        tex = new Texture2D(x,y);
 
         for (int x = 0; x < tex.width; ++x)
         {
@@ -31,7 +31,7 @@ public class BitMapTest : MonoBehaviour {
 
         Sprite newSprite = Sprite.Create(tex,new Rect(0,0,tex.width,tex.height),new Vector2(0,0));
 
-        rend.sprite = newSprite;*/
+        rend.sprite = newSprite;
     }
 	
     public static Color randomColor()
@@ -43,7 +43,7 @@ public class BitMapTest : MonoBehaviour {
     public void setTexture(Texture2D tex2)
     {
         tex = tex2;
-
+        //tex = GISparser.testOSMpng();
         tex.Apply();
         Sprite newSprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0, 0));
         rend.sprite = newSprite;
