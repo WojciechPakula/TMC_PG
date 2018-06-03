@@ -1,8 +1,14 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 
 public class GISmap3 : MonoBehaviour {
+
+    private static Semaphore _destPool;
+    private static Semaphore _dataPool;
+    private static Semaphore _criticalSection;
 
     public Camera cam;
     public int zoom;
@@ -17,18 +23,32 @@ public class GISmap3 : MonoBehaviour {
     public GameObject o1;
     public GameObject o2;
     public GameObject cur;
+    //public GISlayerBING bingDebug;
+    //public byte[] testowyObrazek = null; //RGBA
+    //public SpriteRenderer rend;
+
+    //thread
+    byte[] threadData = null;
+    Vector3Int? destination = null;
+    bool killThread = false;
 
     private Dictionary<Vector3Int, GameObject> segmentCache = new Dictionary<Vector3Int, GameObject>();
     private List<GameObject> allSegments = new List<GameObject>();
 
     // Use this for initialization
     void Start () {
+        _destPool = new Semaphore(1, 1);
+        _dataPool = new Semaphore(1, 1);
+        _criticalSection = new Semaphore(1, 1);
         cam.orthographic = true;
         //ghostCameraPosition = new Vector2d(0,0);
         oldzoom = zoom;
+        //layers.Add(new GISlayerTest());
         layers.Add(new GISlayerTest());
         ghostCamera = new Vector3d(cam.transform.position.x, cam.transform.position.y, cam.transform.position.z);
         //doTestowania();
+        setView(new Vector3d(0, 0, -1));
+        startThread();
     }
     // Update is called once per frame
     void Update () {
@@ -37,9 +57,151 @@ public class GISmap3 : MonoBehaviour {
         //updateOffset();
         cameraCenterizer();
         updateCamera();
-        setCameraSize();       
-        updateSegments();
+        setCameraSize();
+        mainThreadSegmentUpdate();
+        //updateSegments();
+        updateSegmentsThreadSafe();
         //cur.transform.position = new Vector3((float)wp.x,0,(float)wp.y);
+    }
+
+    //watek
+    Thread thread;
+
+    void startThread()
+    {
+        thread = new Thread(() => ExecuteInForeground(Thread.CurrentThread));
+        thread.Start();
+    }
+    private void ExecuteInForeground(Thread main)
+    {
+        while (!killThread)
+        {
+            var destTest = getDestination();
+            if (destTest != null && isDataNull())//triggeruje się gdy tablicaDanych segmentu == null
+            {
+                Debug.Log("Renderuje nowy obrazek,"+ destTest.Value.x+"," + destTest.Value.y + "," + destTest.Value.z);
+                var segment = destTest.Value;
+                byte[] tmpTex = null;
+                //renderuj segment
+                foreach (var layer in layers)
+                {
+                    byte[] tex = layer.renderSegmentWithCacheThreadSafe(segment);
+                    if (tmpTex != null)
+                    {
+                        for (int i = 0; i < tex.Length; i+=4)
+                        {
+                            byte[] c = new byte[4];
+                            c[0] = (byte)((tex[i + 0] * (tex[i + 3] / 255f)) + (tmpTex[i + 0] * (1.0f - (tex[i + 3] / 255f))));
+                            c[1] = (byte)((tex[i + 1] * (tex[i + 3] / 255f)) + (tmpTex[i + 1] * (1.0f - (tex[i + 3] / 255f))));
+                            c[2] = (byte)((tex[i + 2] * (tex[i + 3] / 255f)) + (tmpTex[i + 2] * (1.0f - (tex[i + 3] / 255f))));
+                            c[3] = (byte)((1f - (((255f - (float)tex[i + 3]) / 255f) * ((255f - (float)tmpTex[i + 3]) / 255f)))*255);//problem
+                            tex[i + 0] = c[0];
+                            tex[i + 1] = c[1];
+                            tex[i + 2] = c[2];
+                            tex[i + 3] = c[3];
+                        }
+                    }
+                    tmpTex = tex;
+                }
+                //zakonczono
+                setData(tmpTex);
+            }
+        }
+    }
+    void setDestination(Vector3Int? dest)
+    {
+        _destPool.WaitOne();
+
+        /*if (dest == null)
+            Debug.Log("Ustawiam cel null");
+        else
+            Debug.Log("Ustawiam cel obrazka");*/
+        destination = dest;
+        _destPool.Release();
+    }
+    Vector3Int? getDestination()
+    {
+        Vector3Int? cpy = null;
+        _destPool.WaitOne();
+        if (destination != null)
+            cpy = new Vector3Int(destination.Value.x, destination.Value.y, destination.Value.z);
+        _destPool.Release();
+        return cpy;
+    }
+    void setData(byte[] dest)//problem optymalizacyjny
+    {        
+        _dataPool.WaitOne();
+        if (dest == null)
+            Debug.Log("Ustawiam dane null");
+        else
+            Debug.Log("Ustawiam dane obrazka");
+        threadData = dest;
+        _dataPool.Release();
+    }
+    byte[] getData()
+    {
+        byte[] cpy = null;
+        _dataPool.WaitOne();
+        if (threadData != null) {
+            cpy = new byte[threadData.Length];
+            Array.Copy(threadData, cpy, threadData.Length); }
+        _dataPool.Release();
+        return cpy;
+    }
+    bool isDataNull()
+    {
+        bool res = false;
+        _destPool.WaitOne();
+        if (threadData == null)
+            res = true;
+        _destPool.Release();
+        return res;
+    }
+    private void OnDestroy()
+    {
+        try
+        {
+            killThread = true;
+            thread.Abort();
+        }
+        catch
+        {
+
+        }
+    }
+    void mainThreadSegmentUpdate()
+    {
+        var tmpDest = getDestination();
+        if (!isDataNull() && tmpDest != null)
+        {
+            //start
+            GameObject go;
+            bool czyIstnieje = segmentCache.TryGetValue(tmpDest.Value, out go);
+            if (czyIstnieje)
+            {
+                var texByte = getData();
+                Texture2D tex = new Texture2D(256, 256, TextureFormat.RGBA32, false);
+                tex.LoadRawTextureData(texByte);
+                tex.filterMode = FilterMode.Point;
+                /*Debug.Log("podglad:"+tmpDest.Value.x+"," + tmpDest.Value.y + "," + tmpDest.Value.z);
+                for (int i = 0; i < 10; ++i)
+                {
+                    Debug.Log("R:"+ texByte[i*4+0]+ "G:" + texByte[i * 4 + 1]+ "B:" + texByte[i * 4 + 2]+ "A:" + texByte[i * 4 + 3]);
+                }*/
+                var seg = go.GetComponent<GISlayerSegment>();
+                seg.setTexture(tex);
+            }
+
+            //zakonczono
+            setDestination(null);
+            setData(null);
+        }
+    }
+
+    //z = -1
+    void setView(Vector3d pos)
+    {
+        logicCamera = pos;
     }
 
     void cameraCenterizer()
@@ -93,7 +255,7 @@ public class GISmap3 : MonoBehaviour {
     }
 
     //sprawdza czy trzeba coś wyrenderować czy pobrać z cache
-    private void updateSegments()
+    /*private void updateSegments()
     {
         //pobierz jakie segmenty są widoczne
         var visibleSegments = getVisibleSegmentCoordsList();
@@ -116,7 +278,7 @@ public class GISmap3 : MonoBehaviour {
             Texture2D tmpTex = null;
             foreach (var layer in layers)
             {
-                var tex = layer.renderSegment(segment);
+                var tex = layer.renderSegmentWithCache(segment);
                 if (tmpTex != null)
                 {
                     var tmpc = tmpTex.GetPixels();
@@ -136,6 +298,32 @@ public class GISmap3 : MonoBehaviour {
             }            
             //stworz gameobject i dodaj do slownika
             createNewSegment(segment, tmpTex);
+            break;
+        }
+    }*/
+    private void updateSegmentsThreadSafe()
+    {
+        if (getDestination() != null || !isDataNull()) return;
+
+        //pobierz jakie segmenty są widoczne
+        var visibleSegments = getVisibleSegmentCoordsList();
+
+        //sprawdź czy są już wyrenderowane
+
+        //renderuj segmenty
+        foreach (var segment in visibleSegments)
+        {
+            GameObject go;
+            bool czyIstnieje = segmentCache.TryGetValue(segment, out go);
+            if (czyIstnieje && go != null)//warunek renderowania 
+            {
+                Vector3 p = go.transform.position;
+                p.z = 0;//nooffset
+                go.transform.position = p;
+                continue;
+            }
+            createNewSegmentNoTexture(segment);
+            setDestination(segment);           
             break;
         }
     }
@@ -161,11 +349,31 @@ public class GISmap3 : MonoBehaviour {
         segment.setTexture(tex);
         segment.segmentPosition = pos;
         segment.position = GISlayer.segmentToUnitary(pos);
-        nowySegment.transform.localScale /= (1<<zoom);
+        nowySegment.transform.localScale /= ((1<<zoom)*1f);
         //segment.rend;
 
         segment.refreshWorldPosition(worldOffset);//nooffset
 
+        allSegments.Add(nowySegment);
+        segmentCache.Add(pos, nowySegment);
+        return nowySegment;
+    }
+    GameObject createNewSegmentNoTexture(Vector3Int pos)
+    {
+        GameObject nowySegment = new GameObject("Segment-" + segmentCounter + ",x:" + pos.x + ",y:" + pos.y + ",z:" + pos.z); segmentCounter++;
+
+        nowySegment.transform.parent = this.transform;
+        nowySegment.transform.localScale *= 1 / 2.56f;
+        var sprite = nowySegment.AddComponent<SpriteRenderer>();
+        var segment = nowySegment.AddComponent<GISlayerSegment>();
+        nowySegment.transform.rotation = Quaternion.Euler(180, 0, 0);
+        //segment.setTexture(tex);
+        segment.segmentPosition = pos;
+        segment.position = GISlayer.segmentToUnitary(pos);
+        nowySegment.transform.localScale /= ((1 << zoom) * 1f);
+        //segment.rend;
+
+        segment.refreshWorldPosition(worldOffset);//nooffset
         allSegments.Add(nowySegment);
         segmentCache.Add(pos, nowySegment);
         return nowySegment;
@@ -252,7 +460,7 @@ public class GISmap3 : MonoBehaviour {
     {
         if (oldzoom != zoom)
         {  //zoom uległ zmianie
-            if (zoom > 20) zoom = oldzoom;
+            if (zoom > 19) zoom = oldzoom;
             else
             if (zoom < 1) zoom = oldzoom;
             else
@@ -294,7 +502,12 @@ public class GISmap3 : MonoBehaviour {
         }
         if (Input.GetKeyDown(KeyCode.L))
         {
-            //ladowaniePrzyciskiem();
+            /*Texture2D tex = new Texture2D(256, 256, TextureFormat.RGBA32, false);
+            tex.LoadRawTextureData(testowyObrazek);
+            tex.filterMode = FilterMode.Point;
+            tex.Apply();
+            Sprite newSprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0, 0));
+            rend.sprite = newSprite;*/
         }
         if (Input.GetKeyDown(KeyCode.T))
         {
@@ -305,7 +518,8 @@ public class GISmap3 : MonoBehaviour {
     private Vector3d tmpDirection = Vector3d.zero;
     //private GameObject ghostCamera = null;
     private Vector3d ghostCamera;
-    private const float MoveVelocity = 3.0f;
+    private Vector3d logicCamera;
+    private const float MoveVelocity = 2.0f;
     private float tmpsize = 5;
     //Gwałtowność ruchów
     private const float Rapidity = 5f;
@@ -317,25 +531,28 @@ public class GISmap3 : MonoBehaviour {
             direction.Normalize();
             direction = direction * 100f;
         }
-        tmpDirection += new Vector3d(direction.x, direction.y, 0);
+        tmpDirection += new Vector3d(direction.x, -direction.y, 0);
     }
 
     public void updateCamera()
     {
+        //logicCamera.x = ghostCamera.x + worldOffset.x;
+        //logicCamera.y = -(ghostCamera.y + worldOffset.y);
         tmpsize = 5.0f / (float)(1 << zoom);
         tmpsize = Limit(0.00000001f, 100f, tmpsize);
 
         double moveOffset = MoveVelocity * Time.deltaTime * tmpsize;
         Vector3d move = new Vector3d(moveOffset * tmpDirection.x, moveOffset * tmpDirection.y, moveOffset * tmpDirection.z);  //nooffset
-        //ghostCamera.transform.Translate(move);
-        ghostCamera += move;
-        //Vector3 ghostFloat = new Vector3((float)ghostCamera.x, (float)ghostCamera.y, (float)ghostCamera.z);
+        //ghostCamera += move;
+        logicCamera += move;
+        ghostCamera = new Vector3d(logicCamera.x - worldOffset.x, -logicCamera.y - worldOffset.y, logicCamera.z);
         Vector3d dpos = new Vector3d(cam.transform.position.x, cam.transform.position.y, cam.transform.position.z);
         Vector3d tmp = Vector3d.Lerp(dpos, ghostCamera, Rapidity * Time.deltaTime);
         cam.transform.localPosition = (Vector3)tmp;
         //cam.transform.localPosition = new Vector3(0,1,0);
         //cam.transform.position = Vector3d.Lerp(dpos, ghostFloat, Rapidity * Time.deltaTime);
         //cam.orthographicSize = Mathf.Lerp(cam.orthographicSize, (float)cam.pixelHeight / Mathf.Pow(2, zoom) / 2.0f, Rapidity * Time.deltaTime);
+        //Debug.Log(logicCamera.x + " "+logicCamera.y);
 
         tmpDirection = Vector3d.zero;
     }

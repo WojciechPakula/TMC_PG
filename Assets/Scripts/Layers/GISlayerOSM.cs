@@ -50,13 +50,9 @@ public class GISlayerOSM : GISlayer {
             return tex;
         }
     }
-    // Use this for initialization
-    void Start () {
-		
-	}
-	
-	// Update is called once per frame
-	void Update () {
-		
-	}
+
+    public override byte[] renderSegmentThreadSafe(int x, int y, int z)
+    {
+        throw new NotImplementedException();
+    }
 }

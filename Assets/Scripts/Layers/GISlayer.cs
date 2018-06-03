@@ -1,19 +1,70 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
+using System.Runtime.InteropServices;
 using UnityEngine;
 
 public abstract class GISlayer {
     private Dictionary<Vector3Int, Texture2D> segmentCache = new Dictionary<Vector3Int, Texture2D>();
+    private Dictionary<Vector3Int, byte[]> segmentCacheByte = new Dictionary<Vector3Int, byte[]>();
     public abstract Texture2D renderSegment(int x, int y, int z);
+    public abstract byte[] renderSegmentThreadSafe(int x, int y, int z);
 
     public Texture2D renderSegment(Vector3Int coords)
     {
         return renderSegment(coords.x, coords.y, coords.z);
     }
+    public Texture2D renderSegmentWithCache(Vector3Int coords)
+    {
+        var c = getCacheSegment(coords.x,coords.y,coords.z);
+        if (c==null)
+        {
+            var res = renderSegment(coords.x, coords.y, coords.z);
+            setCacheSegment(coords.x, coords.y, coords.z, res);
+            return res;
+        }
+        return c;       
+    }
+    public byte[] renderSegmentThreadSafe(Vector3Int coords)
+    {
+        return renderSegmentThreadSafe(coords.x, coords.y, coords.z);
+    }
+    public byte[] renderSegmentWithCacheThreadSafe(Vector3Int coords)
+    {
+        var c = getCacheSegmentByte(coords.x, coords.y, coords.z);
+        if (c == null)
+        {
+            var res = renderSegmentThreadSafe(coords.x, coords.y, coords.z);
+            setCacheSegmentByte(coords.x, coords.y, coords.z, res);
+            return res;
+        }
+        return c;
+    }
+    /*public float4 renderSegmentWithCacheThreadSafe(Vector3Int coords)
+    {
+        var c = getCacheSegment(coords.x, coords.y, coords.z);
+        if (c == null)
+        {
+            var res = renderSegment(coords.x, coords.y, coords.z);
+            setCacheSegment(coords.x, coords.y, coords.z, res);
+            return res;
+        }
+        return c;
+    }*/
     public Texture2D getCacheSegment(int x, int y, int z)
     {
         Texture2D result = null;
         bool val = segmentCache.TryGetValue(new Vector3Int(x,y,z), out result);
+        if (val == false) return null;
+        return result;
+    }
+    public byte[] getCacheSegmentByte(int x, int y, int z)
+    {
+        byte[] result = null;
+        bool val = segmentCacheByte.TryGetValue(new Vector3Int(x, y, z), out result);
         if (val == false) return null;
         return result;
     }
@@ -24,6 +75,14 @@ public abstract class GISlayer {
     public void setCacheSegment(Vector3Int coords, Texture2D tex)
     {
         setCacheSegment(coords.x, coords.y, coords.z,tex);
+    }
+    public void setCacheSegmentByte(int x, int y, int z, byte[] tex)
+    {
+        segmentCacheByte.Add(new Vector3Int(x, y, z), tex);
+    }
+    public void setCacheSegmentByte(Vector3Int coords, byte[] tex)
+    {
+        setCacheSegmentByte(coords.x, coords.y, coords.z, tex);
     }
     public void clearCache()
     {
@@ -86,5 +145,76 @@ public abstract class GISlayer {
     {
         Vector2d result = new Vector2d((double)segment.x/(double)(1<<segment.z), (double)segment.y / (double)(1 << segment.z));
         return result;
+    }
+    /*public static byte[] ImageToByte(Bitmap img)
+    {
+        ImageConverter converter = new ImageConverter();
+        return (byte[])converter.ConvertTo(img, typeof(byte[]));
+    }
+    public static byte[] ImageToByte2(Image img)
+    {
+        using (var stream = new MemoryStream())
+        {
+            img.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
+            return stream.ToArray();
+        }
+    }*/
+    /*public static byte[] getImageRasterBytes(Bitmap bmp, PixelFormat format)
+    {
+        Rectangle rect = new Rectangle(0, 0, bmp.Width, bmp.Height);
+        byte[] bits = null;
+
+        try
+        {
+            // Lock the managed memory
+            BitmapData bmpdata = bmp.LockBits(rect, ImageLockMode.ReadWrite, format);
+
+            // Declare an array to hold the bytes of the bitmap.
+            bits = new byte[bmpdata.Stride * bmpdata.Height];
+
+            // Copy the values into the array.
+            System.Runtime.InteropServices.Marshal.Copy(bmpdata.Scan0, bits, 0, bits.Length);
+
+            // Release managed memory
+            bmp.UnlockBits(bmpdata);
+        }
+        catch
+        {
+            return null;
+        }
+
+        return bits;
+    }*/
+    public static byte[] bingPath(string path)
+    {
+        Bitmap bmp = new Bitmap(path);
+        Rectangle rect = new Rectangle(0, 0, bmp.Width, bmp.Height);
+        BitmapData bmpData =
+           bmp.LockBits(rect, ImageLockMode.ReadWrite, bmp.PixelFormat);
+
+        int bytes = Math.Abs(bmpData.Stride) * bmp.Height;
+        byte[] rgbValues = new byte[bytes];       
+
+        // Copy the RGB values into the array.
+        Marshal.Copy(bmpData.Scan0, rgbValues, 0, bytes);
+
+        byte[] rgbaValues = new byte[bmp.Width* bmp.Height*4];
+        for (int x = 0; x < bmp.Width; x++)
+        {
+            for (int y = 0; y < bmp.Width; y++)
+            {
+                rgbaValues[(x + bmp.Width * y) * 4 + 0] = rgbValues[(x + bmp.Width * (y)) * 3 + 2];
+                rgbaValues[(x + bmp.Width * y) * 4 + 1] = rgbValues[(x + bmp.Width * (y)) * 3 + 1];
+                rgbaValues[(x + bmp.Width * y) * 4 + 2] = rgbValues[(x + bmp.Width * (y)) * 3 + 0];
+                rgbaValues[(x + bmp.Width * y) * 4 + 3] = 255;
+            }
+        }
+        /*byte[] argbTex= new byte[bmp.Width* bmp.Height* 4];
+        for (int i = 0; i < rgbValues.Length; i+=3)
+        {
+            rgbTex[i];
+        }*/
+
+        return rgbaValues;
     }
 }
