@@ -41,6 +41,7 @@ public class GISmap3 : MonoBehaviour {
 
     // Use this for initialization
     void Start () {
+        GISlayer2137.loadResources();//JP2GMD
         _destPool = new Semaphore(1, 1);
         _dataPool = new Semaphore(1, 1);
         _criticalSection = new Semaphore(1, 1);
@@ -48,10 +49,14 @@ public class GISmap3 : MonoBehaviour {
         //ghostCameraPosition = new Vector2d(0,0);
         oldzoom = zoom;
         //layers.Add(new GISlayerTest());
+
+        //layers.Add(new GISlayer2137());
+
         layers.Add(new GISlayerOSM());
         var l = new GISlayerBING();
         l.opacity = 0.5f;
         layers.Add(l);
+
         ghostCamera = new Vector3d(cam.transform.position.x, cam.transform.position.y, cam.transform.position.z);
         //doTestowania();
         setView(new Vector3d(0.551701101474401, 0.31931727845227, -1));

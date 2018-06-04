@@ -90,7 +90,7 @@ public class GISlayerBING : GISlayer {
                 //Debug.Log("BING_MAP_RENDER after download");
                 try
                 {
-                    client.DownloadFile(new Uri(url), filePath);                  
+                    client.DownloadFile(new Uri(url), filePath); 
                 }
                 catch (Exception ex)
                 {
