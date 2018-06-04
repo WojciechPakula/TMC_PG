@@ -12,7 +12,7 @@ public class GISlayerSegment : MonoBehaviour {
     public Vector2 wsp;
 
     SpriteRenderer rend;
-    Texture2D tex;
+    Texture2D tex = null;
     private void Awake()
     {
         rend = GetComponent<SpriteRenderer>();
@@ -57,6 +57,11 @@ public class GISlayerSegment : MonoBehaviour {
         tex.Apply();
         Sprite newSprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0, 0));
         rend.sprite = newSprite;
+    }
+    public bool isTexture()
+    {
+        if (tex == null) return false;
+        return true;
     }
     /*void Update()
     {

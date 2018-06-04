@@ -18,7 +18,7 @@ public class GISlayerOSM : GISlayer {
         {
             return tex;
         } else
-        {
+        {            
             string url = @"http://a.tile.openstreetmap.org/" + z + @"/" + x + @"/" + y + @".png";
             string name = "OSM." + z + "." + x + "." + y + ".png";
             string filePath = GISparser.webImagesPath + name;
@@ -33,6 +33,7 @@ public class GISlayerOSM : GISlayer {
                 }
                 else
                 {
+                    ServicePointManager.ServerCertificateValidationCallback = MyRemoteCertificateValidationCallback;
                     client.DownloadFile(new Uri(url), filePath);
                     if (File.Exists(filePath))
                     {
@@ -53,6 +54,39 @@ public class GISlayerOSM : GISlayer {
 
     public override byte[] renderSegmentThreadSafe(int x, int y, int z)
     {
-        throw new NotImplementedException();
+        string url = @"http://a.tile.openstreetmap.org/" + z + @"/" + x + @"/" + y + @".png";
+        string name = "OSM." + z + "." + x + "." + y + ".png";
+        string filePath = GISparser.webImagesPath + name;
+        byte[] fileData = null;
+        using (WebClient client = new WebClient())
+        {
+            if (File.Exists(filePath))
+            {
+                fileData = GISlayer.osmPath(filePath);
+            }
+            else
+            {
+                try
+                {                   
+                     client.DownloadFile(new Uri(url), filePath);                 
+                } catch (Exception ex)
+                {
+                    Debug.Log(ex.Message);
+                    if (File.Exists(filePath))
+                    {
+                        File.Delete(filePath);
+                    }
+                }                
+                if (File.Exists(filePath))
+                {
+                    fileData = GISlayer.osmPath(filePath);
+                }
+                else
+                {
+                    Debug.Log("Błąd sieci, nie można pobrać pliku png");
+                }
+            }
+        }
+        return fileData;
     }
 }

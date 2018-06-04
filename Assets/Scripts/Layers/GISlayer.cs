@@ -4,12 +4,15 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Net.Security;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using UnityEngine;
 
 public abstract class GISlayer {
     private Dictionary<Vector3Int, Texture2D> segmentCache = new Dictionary<Vector3Int, Texture2D>();
     private Dictionary<Vector3Int, byte[]> segmentCacheByte = new Dictionary<Vector3Int, byte[]>();
+    public float opacity = 1.0f;
     public abstract Texture2D renderSegment(int x, int y, int z);
     public abstract byte[] renderSegmentThreadSafe(int x, int y, int z);
 
@@ -23,7 +26,8 @@ public abstract class GISlayer {
         if (c==null)
         {
             var res = renderSegment(coords.x, coords.y, coords.z);
-            setCacheSegment(coords.x, coords.y, coords.z, res);
+            if (res != null)
+                setCacheSegment(coords.x, coords.y, coords.z, res);
             return res;
         }
         return c;       
@@ -37,10 +41,17 @@ public abstract class GISlayer {
         var c = getCacheSegmentByte(coords.x, coords.y, coords.z);
         if (c == null)
         {
-            var res = renderSegmentThreadSafe(coords.x, coords.y, coords.z);
-            setCacheSegmentByte(coords.x, coords.y, coords.z, res);
-            return res;
+            c = renderSegmentThreadSafe(coords.x, coords.y, coords.z);
+            if (c != null)
+            {
+                setCacheSegmentByte(coords.x, coords.y, coords.z, c);               
+            }
         }
+        if (c != null)        
+            for (int i = 0; i < c.Length; ++i)
+            {
+                c[i] = (byte)((float)c[i] * opacity);
+            }              
         return c;
     }
     /*public float4 renderSegmentWithCacheThreadSafe(Vector3Int coords)
@@ -187,18 +198,21 @@ public abstract class GISlayer {
     }*/
     public static byte[] bingPath(string path)
     {
+        //Debug.Log("GISlayer start: "+ path);
         Bitmap bmp = new Bitmap(path);
+        //Debug.Log("GISlayer bitmap");
         Rectangle rect = new Rectangle(0, 0, bmp.Width, bmp.Height);
         BitmapData bmpData =
            bmp.LockBits(rect, ImageLockMode.ReadWrite, bmp.PixelFormat);
 
         int bytes = Math.Abs(bmpData.Stride) * bmp.Height;
-        byte[] rgbValues = new byte[bytes];       
-
+        byte[] rgbValues = new byte[bytes];
+        //Debug.Log("GISlayer copy");
         // Copy the RGB values into the array.
         Marshal.Copy(bmpData.Scan0, rgbValues, 0, bytes);
 
         byte[] rgbaValues = new byte[bmp.Width* bmp.Height*4];
+        //Debug.Log("GISlayer mem");
         for (int x = 0; x < bmp.Width; x++)
         {
             for (int y = 0; y < bmp.Width; y++)
@@ -214,7 +228,78 @@ public abstract class GISlayer {
         {
             rgbTex[i];
         }*/
-
+        //Debug.Log("GISlayer end");
         return rgbaValues;
+    }
+    public static byte[] osmPath(string path)
+    {
+        //Debug.Log("GISlayer start: " + path);
+        Bitmap bmp = new Bitmap(path);
+
+        //Bitmap bmpIn = (Bitmap)Bitmap.FromFile(inputFileName);
+
+        Bitmap converted = new Bitmap(bmp.Width, bmp.Height, PixelFormat.Format24bppRgb);
+        using (System.Drawing.Graphics g = System.Drawing.Graphics.FromImage(converted))
+        {
+            // Prevent DPI conversion
+            g.PageUnit = GraphicsUnit.Pixel;
+            // Draw the image
+            g.DrawImageUnscaled(bmp, 0, 0);
+        }
+        bmp = converted;
+        //Debug.Log("GISlayer bitmap");
+        Rectangle rect = new Rectangle(0, 0, bmp.Width, bmp.Height);
+        BitmapData bmpData =
+           bmp.LockBits(rect, ImageLockMode.ReadWrite, bmp.PixelFormat);
+
+        int bytes = Math.Abs(bmpData.Stride) * bmp.Height;
+        byte[] rgbValues = new byte[bytes];
+        //Debug.Log("GISlayer copy");
+        // Copy the RGB values into the array.
+        Marshal.Copy(bmpData.Scan0, rgbValues, 0, bytes);
+
+        byte[] rgbaValues = new byte[bmp.Width * bmp.Height * 4];
+        //Debug.Log("GISlayer mem");
+        for (int x = 0; x < bmp.Width; x++)
+        {
+            for (int y = 0; y < bmp.Width; y++)
+            {
+                rgbaValues[(x + bmp.Width * y) * 4 + 0] = rgbValues[(x + bmp.Width * (y)) * 3 + 2];
+                rgbaValues[(x + bmp.Width * y) * 4 + 1] = rgbValues[(x + bmp.Width * (y)) * 3 + 1];
+                rgbaValues[(x + bmp.Width * y) * 4 + 2] = rgbValues[(x + bmp.Width * (y)) * 3 + 0];
+                rgbaValues[(x + bmp.Width * y) * 4 + 3] = 255;
+            }
+        }
+        /*byte[] argbTex= new byte[bmp.Width* bmp.Height* 4];
+        for (int i = 0; i < rgbValues.Length; i+=3)
+        {
+            rgbTex[i];
+        }*/
+        //Debug.Log("GISlayer end");
+        return rgbaValues;
+    }
+    public bool MyRemoteCertificateValidationCallback(System.Object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+    {
+        bool isOk = true;
+        // If there are errors in the certificate chain, look at each error to determine the cause.
+        if (sslPolicyErrors != SslPolicyErrors.None)
+        {
+            for (int i = 0; i < chain.ChainStatus.Length; i++)
+            {
+                if (chain.ChainStatus[i].Status != X509ChainStatusFlags.RevocationStatusUnknown)
+                {
+                    chain.ChainPolicy.RevocationFlag = X509RevocationFlag.EntireChain;
+                    chain.ChainPolicy.RevocationMode = X509RevocationMode.Online;
+                    chain.ChainPolicy.UrlRetrievalTimeout = new TimeSpan(0, 1, 0);
+                    chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
+                    bool chainIsValid = chain.Build((X509Certificate2)certificate);
+                    if (!chainIsValid)
+                    {
+                        isOk = false;
+                    }
+                }
+            }
+        }
+        return isOk;
     }
 }

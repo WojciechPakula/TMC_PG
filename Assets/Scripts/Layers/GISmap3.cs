@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
+using System.Net;
 using System.Threading;
 using UnityEngine;
 
@@ -18,11 +21,12 @@ public class GISmap3 : MonoBehaviour {
     List<GISlayer> layers = new List<GISlayer>();
     //Vector2d ghostCameraPosition;   
     int segmentCounter = 0;
+    Vector2d logicCursorPosition;
 
     //debug
     public GameObject o1;
     public GameObject o2;
-    public GameObject cur;
+    //public GameObject cur;
     //public GISlayerBING bingDebug;
     //public byte[] testowyObrazek = null; //RGBA
     //public SpriteRenderer rend;
@@ -44,14 +48,28 @@ public class GISmap3 : MonoBehaviour {
         //ghostCameraPosition = new Vector2d(0,0);
         oldzoom = zoom;
         //layers.Add(new GISlayerTest());
-        layers.Add(new GISlayerTest());
+        layers.Add(new GISlayerOSM());
+        var l = new GISlayerBING();
+        l.opacity = 0.5f;
+        layers.Add(l);
         ghostCamera = new Vector3d(cam.transform.position.x, cam.transform.position.y, cam.transform.position.z);
         //doTestowania();
-        setView(new Vector3d(0, 0, -1));
+        setView(new Vector3d(0.551701101474401, 0.31931727845227, -1));
         startThread();
+
+        //tu sa testy ktore musze usunac
+        Debug.Log("Init webtest");
+
+        //var osmtest = new GISlayerOSM();
+        //osmtest.renderSegment(0,0,1);
+
+        Debug.Log("Init zakonczony");
+        //Bitmap bmp = new Bitmap(@"c:\tmp\BING.1.0.0.png");
+        Debug.Log("Init zakonczony bardziej");
     }
     // Update is called once per frame
     void Update () {
+        cursorUpdate();
         keysUpdate();
         zoomUpdate();
         //updateOffset();
@@ -64,47 +82,83 @@ public class GISmap3 : MonoBehaviour {
         //cur.transform.position = new Vector3((float)wp.x,0,(float)wp.y);
     }
 
+    void cursorUpdate()
+    {
+        var pos = cursorToWorldPosition();
+        //cur.transform.localPosition = new Vector3((float)(pos.x+worldOffset.x), (float)(-pos.y-worldOffset.y), 0);
+        //Debug.Log("cur: "+pos.x+","+pos.y);
+        logicCursorPosition = new Vector2d(pos.x + worldOffset.x, -pos.y - worldOffset.y);
+    }
+
     //watek
     Thread thread;
 
     void startThread()
     {
+        Debug.Log("Startuje watek");
         thread = new Thread(() => ExecuteInForeground(Thread.CurrentThread));
         thread.Start();
     }
     private void ExecuteInForeground(Thread main)
     {
+        Debug.Log("Watek pracuje");
         while (!killThread)
         {
             var destTest = getDestination();
             if (destTest != null && isDataNull())//triggeruje się gdy tablicaDanych segmentu == null
             {
-                Debug.Log("Renderuje nowy obrazek,"+ destTest.Value.x+"," + destTest.Value.y + "," + destTest.Value.z);
+                bool fail = false;
+                //Debug.Log("Renderuje nowy obrazek,"+ destTest.Value.x+"," + destTest.Value.y + "," + destTest.Value.z);
                 var segment = destTest.Value;
-                byte[] tmpTex = null;
+                byte[] tmpTex = new byte[256*256*4];
+                for (int i = 0; i < tmpTex.Length; ++i)
+                {
+                    if (i%4==3)
+                    {
+                        tmpTex[i] = 255;
+                    } else
+                    {
+                        tmpTex[i] = 0;
+                    }
+                }
                 //renderuj segment
                 foreach (var layer in layers)
                 {
-                    byte[] tex = layer.renderSegmentWithCacheThreadSafe(segment);
-                    if (tmpTex != null)
+                    byte[] tex = null;
+                    try
                     {
-                        for (int i = 0; i < tex.Length; i+=4)
+                        tex = layer.renderSegmentWithCacheThreadSafe(segment);
+                        if (tmpTex != null)
                         {
-                            byte[] c = new byte[4];
-                            c[0] = (byte)((tex[i + 0] * (tex[i + 3] / 255f)) + (tmpTex[i + 0] * (1.0f - (tex[i + 3] / 255f))));
-                            c[1] = (byte)((tex[i + 1] * (tex[i + 3] / 255f)) + (tmpTex[i + 1] * (1.0f - (tex[i + 3] / 255f))));
-                            c[2] = (byte)((tex[i + 2] * (tex[i + 3] / 255f)) + (tmpTex[i + 2] * (1.0f - (tex[i + 3] / 255f))));
-                            c[3] = (byte)((1f - (((255f - (float)tex[i + 3]) / 255f) * ((255f - (float)tmpTex[i + 3]) / 255f)))*255);//problem
-                            tex[i + 0] = c[0];
-                            tex[i + 1] = c[1];
-                            tex[i + 2] = c[2];
-                            tex[i + 3] = c[3];
+                            for (int i = 0; i < tex.Length; i += 4)
+                            {
+                                byte[] c = new byte[4];
+                                c[0] = (byte)((tex[i + 0] * (tex[i + 3] / 255f)) + (tmpTex[i + 0] * (1.0f - (tex[i + 3] / 255f))));
+                                c[1] = (byte)((tex[i + 1] * (tex[i + 3] / 255f)) + (tmpTex[i + 1] * (1.0f - (tex[i + 3] / 255f))));
+                                c[2] = (byte)((tex[i + 2] * (tex[i + 3] / 255f)) + (tmpTex[i + 2] * (1.0f - (tex[i + 3] / 255f))));
+                                c[3] = (byte)((1f - (((255f - (float)tex[i + 3]) / 255f) * ((255f - (float)tmpTex[i + 3]) / 255f))) * 255);//problem
+                                tex[i + 0] = c[0];
+                                tex[i + 1] = c[1];
+                                tex[i + 2] = c[2];
+                                tex[i + 3] = c[3];
+                            }
                         }
-                    }
+                    } catch (Exception ex)
+                    {
+                        Debug.LogWarning("Thread Problem: "+ex.Message);
+                        fail = true;
+                        break;
+                    }                                      
                     tmpTex = tex;
                 }
                 //zakonczono
+                if (fail) tmpTex = null;
                 setData(tmpTex);
+                if (tmpTex == null)
+                {
+                    setDestination(null);
+                    Debug.LogWarning("No Render");
+                }
             }
         }
     }
@@ -112,10 +166,10 @@ public class GISmap3 : MonoBehaviour {
     {
         _destPool.WaitOne();
 
-        /*if (dest == null)
-            Debug.Log("Ustawiam cel null");
-        else
-            Debug.Log("Ustawiam cel obrazka");*/
+         if (dest == null)
+             Debug.Log("Ustawiam cel null");
+         else
+             Debug.Log("Ustawiam cel obrazka");
         destination = dest;
         _destPool.Release();
     }
@@ -151,10 +205,10 @@ public class GISmap3 : MonoBehaviour {
     bool isDataNull()
     {
         bool res = false;
-        _destPool.WaitOne();
+        _dataPool.WaitOne();
         if (threadData == null)
             res = true;
-        _destPool.Release();
+        _dataPool.Release();
         return res;
     }
     private void OnDestroy()
@@ -315,16 +369,20 @@ public class GISmap3 : MonoBehaviour {
         {
             GameObject go;
             bool czyIstnieje = segmentCache.TryGetValue(segment, out go);
-            if (czyIstnieje && go != null)//warunek renderowania 
+            if ((czyIstnieje) && go != null)//warunek renderowania 
             {
                 Vector3 p = go.transform.position;
                 p.z = 0;//nooffset
                 go.transform.position = p;
-                continue;
-            }
-            createNewSegmentNoTexture(segment);
-            setDestination(segment);           
-            break;
+                if (go.GetComponent<GISlayerSegment>().isTexture()) continue;
+                setDestination(segment);
+                break;
+            } else
+            {
+                createNewSegmentNoTexture(segment);
+                setDestination(segment);
+                break;
+            }            
         }
     }
 
@@ -509,9 +567,9 @@ public class GISmap3 : MonoBehaviour {
             Sprite newSprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0, 0));
             rend.sprite = newSprite;*/
         }
-        if (Input.GetKeyDown(KeyCode.T))
+        if (Input.GetKeyDown(KeyCode.C))
         {
-            //heatMapaZPrzycisku();
+            Debug.Log(logicCursorPosition.x+","+logicCursorPosition.y);
         }
     }
     //kamera
@@ -519,7 +577,7 @@ public class GISmap3 : MonoBehaviour {
     //private GameObject ghostCamera = null;
     private Vector3d ghostCamera;
     private Vector3d logicCamera;
-    private const float MoveVelocity = 2.0f;
+    private const float MoveVelocity = 1.0f;
     private float tmpsize = 5;
     //Gwałtowność ruchów
     private const float Rapidity = 5f;

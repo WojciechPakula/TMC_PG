@@ -43,12 +43,14 @@ public class Console : MonoBehaviour
 
     void OnEnable()
     {
-        Application.RegisterLogCallback(HandleLog);
+        //Application.RegisterLogCallback(HandleLog);
+        Application.RegisterLogCallbackThreaded(HandleLog);
     }
 
     void OnDisable()
     {
-        Application.RegisterLogCallback(null);
+        //Application.RegisterLogCallback(null);
+        Application.RegisterLogCallbackThreaded(null);
     }
 
     void Update()
