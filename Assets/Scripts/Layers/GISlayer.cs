@@ -20,6 +20,12 @@ public abstract class GISlayer {
     static int id=0;
     private int myId=0;
 
+    public void clearCache()
+    {
+        segmentCache.Clear();
+        segmentCacheByte.Clear();
+    }
+
     public GISlayer()
     {
         myId = id++;
@@ -127,10 +133,6 @@ public abstract class GISlayer {
     public void setCacheSegmentByte(Vector3Int coords, byte[] tex)
     {
         setCacheSegmentByte(coords.x, coords.y, coords.z, tex);
-    }
-    public void clearCache()
-    {
-        segmentCache.Clear();
     }
     /*{        
         Texture2D result = new Texture2D(256,256);

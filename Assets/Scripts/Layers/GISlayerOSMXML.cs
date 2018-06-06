@@ -60,21 +60,22 @@ public class GISlayerOSMXML : GISlayer {
     public void init(string path)
     {
         gisdata = GISparser.LoadOSM(path);
-        qt = new GISquadtree(null);
+        this.clearCache();
+        map.clearSegmentCache();
+        /*qt = new GISquadtree(null);
         qt.size = new Vector2d(1, 1);
         qt.position = new Vector2d(0, 0);
         foreach (var way in gisdata.wayContainer)
         {
             qt.insert(way);
-        }       
+        }  */     
     }
 
     private byte[] generateTexture(int cx, int cy, int z)
     {
         byte[] tex = new byte[256*256*4];
-        var path = GISparser.getQuadPath(new Vector2Int(cx, cy), z);
-        var waysList = qt.getObjects(path);
-
+        //var path = GISparser.getQuadPath(new Vector2Int(cx, cy), z);
+        //var waysList = qt.getObjects(path);    
         //return GISparser.downloadBINGpng(cx,cy,z);
 
         Vector2d chunkLow = new Vector2d(((double)(cx) / (double)(1 << z)), ((double)(cy) / (double)(1 << z)));
@@ -89,8 +90,9 @@ public class GISlayerOSMXML : GISlayer {
             }
         }
 
-        if (gisdata == null || qt == null) return tex;
+        if (gisdata == null) return tex;
 
+        var waysList = gisdata.wayContainer;
         foreach (var way in waysList)
         {
             //lineChecker(Vector2d l1, Vector2d l2, Vector2d p, float thickness);

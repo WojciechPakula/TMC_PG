@@ -6,6 +6,8 @@ using UnityEngine;
 public class GISlayerHeatMap : GISlayer {
 
     GISdata gisdata = null;
+    List<GISnode> uzytecznePunkty;
+    public Dictionary<string, string> dostepneNazwy;
 
     public override string getTypeName()
     {
@@ -19,54 +21,38 @@ public class GISlayerHeatMap : GISlayer {
 
     public override byte[] renderSegmentThreadSafe(int x, int y, int z)
     {
-        /*string url = @"http://a.tile.openstreetmap.org/" + z + @"/" + x + @"/" + y + @".png";
-        string name = "OSM." + z + "." + x + "." + y + ".png";
-        string filePath = GISparser.webImagesPath + name;
-        byte[] fileData = null;
-        using (WebClient client = new WebClient())
-        {
-            if (File.Exists(filePath))
-            {
-                fileData = GISlayer.osmPath(filePath);
-            }
-            else
-            {
-                try
-                {
-                    client.DownloadFile(new Uri(url), filePath);
-                }
-                catch (Exception ex)
-                {
-                    Debug.Log(ex.Message);
-                    if (File.Exists(filePath))
-                    {
-                        File.Delete(filePath);
-                    }
-                }
-                if (File.Exists(filePath))
-                {
-                    fileData = GISlayer.osmPath(filePath);
-                }
-                else
-                {
-                    Debug.Log("Błąd sieci, nie można pobrać pliku png");
-                }
-            }
-        }
-        return fileData;*/
         return generateTexture(x, y, z);
     }
 
     public void init(string path)
     {
         gisdata = GISparser.LoadOSM(path);
+        this.clearCache();
+        map.clearSegmentCache();
+        uzytecznePunkty = new List<GISnode>();
+        dostepneNazwy = new Dictionary<string, string>();
+        foreach (var node in gisdata.nodeContainer)
+        {
+            string output = null;
+            node.tags.TryGetValue("amenity", out output);
+            if (output != null)
+            {
+                uzytecznePunkty.Add(node);
+                try
+                {
+                    dostepneNazwy.Add(output, output);
+                } catch
+                {
+
+                }
+            }
+        }
     }
 
     private byte[] generateTexture(int cx, int cy, int z)
     {
         byte[] tex = new byte[256 * 256 * 4];
-        var path = GISparser.getQuadPath(new Vector2Int(cx, cy), z);
-        //var waysList = qt.getObjects(path);
+        //var path = GISparser.getQuadPath(new Vector2Int(cx, cy), z);
         List<GISway> waysList = null;
 
         Vector2d chunkLow = new Vector2d(((double)(cx) / (double)(1 << z)), ((double)(cy) / (double)(1 << z)));
@@ -83,14 +69,57 @@ public class GISlayerHeatMap : GISlayer {
 
         if (gisdata == null) return tex;
 
-        foreach (var way in waysList)
+        foreach (var punkt in uzytecznePunkty)
+        {
+            drawPointOptimal(tex, punkt, chunkLow, chunkHigh);
+        }
+
+        /*foreach (var way in waysList)
         {
             drawWayOptimal(tex, way, chunkLow, chunkHigh);
-        }
+        }*/
 
         return tex;
     }
-    void drawWayOptimal(byte[] tex, GISway way, Vector2d chunkLow, Vector2d chunkHigh)
+
+    void drawPointOptimal(byte[] tex, GISnode node, Vector2d chunkLow, Vector2d chunkHigh)
+    {
+        Vector2d a1 = node.XY;
+        var p1 = new Vector2Int();
+        p1.x = (int)((node.XY.x - chunkLow.x) / (chunkHigh.x - chunkLow.x) * 256);
+        p1.y = (int)((node.XY.y - chunkLow.y) / (chunkHigh.y - chunkLow.y) * 256);
+        drawPoint(tex, p1, new Vector4(1.0f, 1.0f, 0.0f, 1.0f));
+        //koniec    
+    }
+
+    void drawPoint(byte[] tex, Vector2Int p1, Vector4 color)
+    {
+        setPixel(tex, p1.x, p1.y, color);
+
+        setPixel(tex, p1.x+1, p1.y, color);
+        setPixel(tex, p1.x, p1.y+1, color);
+        setPixel(tex, p1.x-1, p1.y, color);
+        setPixel(tex, p1.x, p1.y-1, color);
+        setPixel(tex, p1.x-1, p1.y-1, color);
+        setPixel(tex, p1.x+1, p1.y+1, color);
+        setPixel(tex, p1.x+1, p1.y-1, color);
+        setPixel(tex, p1.x-1, p1.y+1, color);
+    }
+
+    public string updateStatus(Vector2d cur)
+    {
+        string stat = ".";
+        if (uzytecznePunkty == null) return stat;
+        double min = double.PositiveInfinity;        
+        foreach (var el in uzytecznePunkty)
+        {
+            double dist = (cur-el.XY).magnitude;
+            if (min > dist) { el.tags.TryGetValue("amenity", out stat); min = dist; }
+        }
+        return stat;
+    }
+
+    /*void drawWayOptimal(byte[] tex, GISway way, Vector2d chunkLow, Vector2d chunkHigh)
     {
         GISnode pprev = null;
         foreach (var node in way.localNodeContainer)
@@ -114,8 +143,8 @@ public class GISlayerHeatMap : GISlayer {
             //koniec
             pprev = node;
         }
-    }
-    bool checkLineInBox(Vector2d p0, Vector2d p1, Vector2d bl, Vector2d bh)
+    }*/
+    /*bool checkLineInBox(Vector2d p0, Vector2d p1, Vector2d bl, Vector2d bh)
     {
         if (p0.x < bl.x && p1.x < bl.x) return false;
         if (p0.y < bl.y && p1.y < bl.y) return false;
@@ -131,17 +160,17 @@ public class GISlayerHeatMap : GISlayer {
         var prawy = intersection(p0, p1, bh, bhd); if (prawy.y > bhd.y && prawy.y < bh.y) return true;
         var dolny = intersection(p0, p1, bhd, bh); if (dolny.x > bl.x && dolny.x < bhd.x) return true;
         return false;
-    }
+    }*/
     //p1 i p2 wyznaczają prostą, p3 i p4 drugą prostą. Zwraca punkt przecięcia
-    Vector2d intersection(Vector2d p1, Vector2d p2, Vector2d p3, Vector2d p4)
+    /*Vector2d intersection(Vector2d p1, Vector2d p2, Vector2d p3, Vector2d p4)
     {
         Vector2d result = new Vector2d();
         var mianownik = ((p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x));
         result.x = ((p1.x * p2.y - p1.y * p2.x) * (p3.x - p4.x) - (p1.x - p2.x) * (p3.x * p4.y - p3.y * p4.x)) / mianownik;
         result.y = ((p1.x * p2.y - p1.y * p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x * p4.y - p3.y * p4.x)) / mianownik;
         return result;
-    }
-    void drawLine(byte[] tex, Vector2Int p0, Vector2Int p1, Vector4 color)
+    }*/
+    /*void drawLine(byte[] tex, Vector2Int p0, Vector2Int p1, Vector4 color)
     {
         int x = p0.x, y = p0.y, x2 = p1.x, y2 = p1.y;
 
@@ -178,10 +207,11 @@ public class GISlayerHeatMap : GISlayer {
                 y += dy2;
             }
         }
-    }
+    }*/
 
     void setPixel(byte[] tex, int x, int y, Vector4 color)
     {
+        if (x < 0 || y < 0 || x > 255 || y > 255) return;
         tex[(x + 256 * y) * 4 + 0] = (byte)(color.x * 255f);
         tex[(x + 256 * y) * 4 + 1] = (byte)(color.y * 255f);
         tex[(x + 256 * y) * 4 + 2] = (byte)(color.z * 255f);

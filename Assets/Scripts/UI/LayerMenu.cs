@@ -29,7 +29,9 @@ public class LayerMenu : MonoBehaviour {
                 break;
             case "OSMXML":
                 l = new GISlayerOSMXML();
-                //((GISlayerOSMXML)l).init(@"G:\POLITECHNIKA\PROJEKTY\#8 Technologie map cyfrowych\maly.osm");
+                break;
+            case "HeatMap":
+                l = new GISlayerHeatMap();
                 break;
             case "2137":
                 l = new GISlayer2137();
@@ -212,6 +214,13 @@ public class LayerMenu : MonoBehaviour {
                 go.transform.SetParent(extendedContainer.transform);
                 var opt = go.GetComponent<XMLoptions>();
                 opt.layer = (GISlayerOSMXML)layer;
+                opt.menu = this;
+            } else if (layer is GISlayerHeatMap) {
+                var ob = Resources.Load("Prefabs/HeatOptions", typeof(GameObject));
+                GameObject go = (GameObject)Instantiate(ob, extendedContainer.transform.position, extendedContainer.transform.rotation);
+                go.transform.SetParent(extendedContainer.transform);
+                var opt = go.GetComponent<HeatOptions>();
+                opt.layer = (GISlayerHeatMap)layer;
                 opt.menu = this;
             } else
             {

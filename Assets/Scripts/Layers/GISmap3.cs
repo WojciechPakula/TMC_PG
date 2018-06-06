@@ -24,7 +24,7 @@ public class GISmap3 : MonoBehaviour {
     List<GISlayer> layers = new List<GISlayer>();
     //Vector2d ghostCameraPosition;   
     int segmentCounter = 0;
-    Vector2d logicCursorPosition;
+    public Vector2d logicCursorPosition;
 
     //debug
     //public GameObject o1;

@@ -30,6 +30,8 @@ public static class GISparser {
         double minLon = double.MaxValue;
         double maxLon = double.MinValue;
 
+        Dictionary<long, GISnode> nodeDic = new Dictionary<long, GISnode>();
+
         //wczytujemy najpierw nody bo są potrzebne przy drogach
         foreach (osmNode node in osmNodes)
         {
@@ -49,6 +51,7 @@ public static class GISparser {
             //ustawiamy visibility i dodajemy
             currentNode.visible = Convert.ToBoolean(node.visible);
             loadedData.nodeContainer.Add(currentNode);
+            nodeDic.Add(currentNode.id, currentNode);
             if (currentLat > maxLat) maxLat = currentLat;
             if (currentLon > maxLon) maxLon = currentLon;
             if (currentLat < minLat) minLat = currentLat;
@@ -72,7 +75,10 @@ public static class GISparser {
             foreach (osmWayND wayNode in way.nd)
             {
                 //szukamy w nodach już dodanych tego aktualnego (żeby była referencja) i dodajemy
-                GISnode node = loadedData.nodeContainer.Find(i => i.id == Convert.ToInt64(wayNode.@ref));
+                //GISnode node = loadedData.nodeContainer.Find(i => i.id == Convert.ToInt64(wayNode.@ref));//nieefektywne gówno
+                GISnode node = null;
+                nodeDic.TryGetValue(Convert.ToInt64(wayNode.@ref), out node);
+                if (node == null) Debug.LogWarning("Duży problem z plikiem OSM");
                 currentWay.localNodeContainer.Add(node);
             }
             //ustawiamy visibility i dodajemy
