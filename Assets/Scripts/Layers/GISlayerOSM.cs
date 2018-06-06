@@ -6,12 +6,15 @@ using System.Net;
 using UnityEngine;
 
 public class GISlayerOSM : GISlayer {
-    Dictionary<Vector3Int, Texture2D> done = new Dictionary<Vector3Int, Texture2D>();
-
+    //Dictionary<Vector3Int, Texture2D> done = new Dictionary<Vector3Int, Texture2D>();
+    public override string getTypeName()
+    {
+        return "GISlayerOSM";
+    }
     override
     public Texture2D renderSegment(int x, int y, int z)
     {
-        Texture2D tex = null;
+        /*Texture2D tex = null;
         Vector3Int para = new Vector3Int(x,y,z);
         bool czyJest = done.TryGetValue(para, out tex);
         if (czyJest)
@@ -49,7 +52,8 @@ public class GISlayerOSM : GISlayer {
             tex.Apply();
             done.Add(para,tex);
             return tex;
-        }
+        }*/
+        throw new NotImplementedException();
     }
 
     public override byte[] renderSegmentThreadSafe(int x, int y, int z)

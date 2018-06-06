@@ -11,7 +11,10 @@ public class GISmap3 : MonoBehaviour {
 
     private static Semaphore _destPool;
     private static Semaphore _dataPool;
-    private static Semaphore _criticalSection;
+    private static Semaphore _layerPool;
+    //private static Semaphore _cachePool;
+
+    //private static Semaphore _criticalSection;
 
     public Camera cam;
     public int zoom;
@@ -24,8 +27,8 @@ public class GISmap3 : MonoBehaviour {
     Vector2d logicCursorPosition;
 
     //debug
-    public GameObject o1;
-    public GameObject o2;
+    //public GameObject o1;
+    //public GameObject o2;
     //public GameObject cur;
     //public GISlayerBING bingDebug;
     //public byte[] testowyObrazek = null; //RGBA
@@ -41,21 +44,27 @@ public class GISmap3 : MonoBehaviour {
 
     // Use this for initialization
     void Start () {
-        GISlayer2137.loadResources();//JP2GMD
+        GISlayer2137.loadResources();
         _destPool = new Semaphore(1, 1);
         _dataPool = new Semaphore(1, 1);
-        _criticalSection = new Semaphore(1, 1);
+        _layerPool = new Semaphore(1, 1);
+        //_cachePool = new Semaphore(1, 1);
+        //_criticalSection = new Semaphore(1, 1);
         cam.orthographic = true;
         //ghostCameraPosition = new Vector2d(0,0);
         oldzoom = zoom;
-        //layers.Add(new GISlayerTest());
+
+        /*insertLayerAt(new GISlayerTest(),0);
+        var l = new GISlayerBING();
+        l.opacity = 0.5f;
+        insertLayerAt(l, 1);*/
 
         //layers.Add(new GISlayer2137());
 
-        layers.Add(new GISlayerOSM());
-        var l = new GISlayerBING();
-        l.opacity = 0.5f;
-        layers.Add(l);
+        //layers.Add(new GISlayerOSM());
+        //var l = new GISlayerBING();
+        //l.opacity = 0.5f;
+        //layers.Add(l);
 
         ghostCamera = new Vector3d(cam.transform.position.x, cam.transform.position.y, cam.transform.position.z);
         //doTestowania();
@@ -85,6 +94,15 @@ public class GISmap3 : MonoBehaviour {
         //updateSegments();
         updateSegmentsThreadSafe();
         //cur.transform.position = new Vector3((float)wp.x,0,(float)wp.y);
+    }
+
+    //to się wywołuje gdy coś się zmieni na mapie, na przykład użytkownik uzna, że ukryje jakąś warstwę, więc wszystkie segmenty są już nieaktualne
+    public void clearSegmentCache()
+    {
+        //_cachePool.WaitOne();
+        segmentCache.Clear();
+        allObjectsStepBack();
+        //_cachePool.Release();
     }
 
     void cursorUpdate()
@@ -127,7 +145,8 @@ public class GISmap3 : MonoBehaviour {
                     }
                 }
                 //renderuj segment
-                foreach (var layer in layers)
+                List<GISlayer> layersCopy = getLayers();
+                foreach (var layer in layersCopy)
                 {
                     byte[] tex = null;
                     try
@@ -216,6 +235,72 @@ public class GISmap3 : MonoBehaviour {
         _dataPool.Release();
         return res;
     }
+    public List<GISlayer> getLayers()
+    {
+        _layerPool.WaitOne();
+        var res = new List<GISlayer>(layers);
+        _layerPool.Release();
+        return res;
+    }
+    public void setLayers(List<GISlayer> lay)
+    {
+        clearSegmentCache();
+        _layerPool.WaitOne();
+        layers = lay;
+        _layerPool.Release();
+    }
+    public GISlayer getLayerById(int id, out int index)
+    {
+        var layers = getLayers();
+        index = 0;
+        GISlayer layer = null;
+        foreach (var l in layers)
+        {
+            if (l.getId() == id)
+            {
+                layer = l;
+                break;
+            }
+            index++;
+        }
+        return layer;
+    }
+    public void insertLayerAt(GISlayer l, int index = -1)
+    {
+        clearSegmentCache();
+        _layerPool.WaitOne();
+        if (index == -1)
+            layers.Add(l);
+        else
+            layers.Insert(index,l);
+        _layerPool.Release();
+    }
+    public void removeLayerAt(int index)
+    {
+        clearSegmentCache();
+        _layerPool.WaitOne();
+        layers.RemoveAt(index);
+        _layerPool.Release();
+    }
+    public void removeLayerById(int id)
+    {
+        clearSegmentCache();
+        _layerPool.WaitOne();
+        int index = 0;
+        GISlayer layer = null;
+        foreach (var l in layers)
+        {           
+            if (l.getId() == id)
+            {
+                layer = l;
+                break;
+            }
+            index++;
+        }
+        if (layer != null)
+            layers.RemoveAt(index);
+        _layerPool.Release();
+    }
     private void OnDestroy()
     {
         try
@@ -235,7 +320,9 @@ public class GISmap3 : MonoBehaviour {
         {
             //start
             GameObject go;
+            //_cachePool.WaitOne();
             bool czyIstnieje = segmentCache.TryGetValue(tmpDest.Value, out go);
+            //_cachePool.Release();
             if (czyIstnieje)
             {
                 var texByte = getData();
@@ -373,7 +460,9 @@ public class GISmap3 : MonoBehaviour {
         foreach (var segment in visibleSegments)
         {
             GameObject go;
+            //_cachePool.WaitOne();
             bool czyIstnieje = segmentCache.TryGetValue(segment, out go);
+            //_cachePool.Release();
             if ((czyIstnieje) && go != null)//warunek renderowania 
             {
                 Vector3 p = go.transform.position;
@@ -418,7 +507,9 @@ public class GISmap3 : MonoBehaviour {
         segment.refreshWorldPosition(worldOffset);//nooffset
 
         allSegments.Add(nowySegment);
+        //_cachePool.WaitOne();
         segmentCache.Add(pos, nowySegment);
+        //_cachePool.Release();
         return nowySegment;
     }
     GameObject createNewSegmentNoTexture(Vector3Int pos)
@@ -438,7 +529,9 @@ public class GISmap3 : MonoBehaviour {
 
         segment.refreshWorldPosition(worldOffset);//nooffset
         allSegments.Add(nowySegment);
+        //_cachePool.WaitOne();
         segmentCache.Add(pos, nowySegment);
+        //_cachePool.Release();
         return nowySegment;
     }
 

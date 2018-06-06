@@ -4,17 +4,47 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using UnityEngine;
 
 public abstract class GISlayer {
+    public GISmap3 map;
     private Dictionary<Vector3Int, Texture2D> segmentCache = new Dictionary<Vector3Int, Texture2D>();
     private Dictionary<Vector3Int, byte[]> segmentCacheByte = new Dictionary<Vector3Int, byte[]>();
     public float opacity = 1.0f;
     public abstract Texture2D renderSegment(int x, int y, int z);
     public abstract byte[] renderSegmentThreadSafe(int x, int y, int z);
+    static int id=0;
+    private int myId=0;
+
+    public GISlayer()
+    {
+        myId = id++;
+    }
+
+    public int getId()
+    {
+        return myId;
+    }
+
+    public void setOpacity(float op)
+    {
+        if (opacity != op)
+        {
+            opacity = op;
+            map.clearSegmentCache();
+        }
+    }
+
+    public float getOpacity()
+    {
+        return opacity;
+    }
+
+    public abstract string getTypeName();
 
     public Texture2D renderSegment(Vector3Int coords)
     {
@@ -47,12 +77,15 @@ public abstract class GISlayer {
                 setCacheSegmentByte(coords.x, coords.y, coords.z, c);               
             }
         }
-        if (c != null)        
-            for (int i = 0; i < c.Length; ++i)
+        byte[] output = c.ToArray();
+        if (output != null)        
+            for (int i = 0; i < output.Length; ++i)
             {
-                c[i] = (byte)((float)c[i] * opacity);
-            }              
-        return c;
+                var pomoc = output[i];
+                pomoc = (byte)((float)output[i] * opacity);
+                output[i] = pomoc;
+            }
+        return output;
     }
     /*public float4 renderSegmentWithCacheThreadSafe(Vector3Int coords)
     {

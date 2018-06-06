@@ -6,6 +6,12 @@ using UnityEngine;
 public class GISlayerTest : GISlayer
 {
     static System.Random ran = new System.Random();
+
+    public override string getTypeName()
+    {
+        return "GISlayerTest";
+    }
+
     public override Texture2D renderSegment(int x, int y, int z)
     {
         Texture2D tex = new Texture2D(256, 256);

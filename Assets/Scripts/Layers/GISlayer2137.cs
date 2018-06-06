@@ -16,6 +16,11 @@ public class GISlayer2137 : GISlayer
 
     static System.Random rand;
 
+    public override string getTypeName()
+    {
+        return "GISlayer2137";
+    }
+
     public static void loadResources()
     {
         rand = new System.Random();
