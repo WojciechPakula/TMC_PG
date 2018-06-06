@@ -27,6 +27,10 @@ public class LayerMenu : MonoBehaviour {
             case "Bing":
                 l = new GISlayerBING();
                 break;
+            case "OSMXML":
+                l = new GISlayerOSMXML();
+                //((GISlayerOSMXML)l).init(@"G:\POLITECHNIKA\PROJEKTY\#8 Technologie map cyfrowych\maly.osm");
+                break;
             case "2137":
                 l = new GISlayer2137();
                 break;
@@ -197,13 +201,28 @@ public class LayerMenu : MonoBehaviour {
     {
         clearExtendedOptions();
 
-        var ob = Resources.Load("Prefabs/defaultOptions", typeof(GameObject));
-        GameObject go = (GameObject)Instantiate(ob, extendedContainer.transform.position, extendedContainer.transform.rotation);
-        go.transform.SetParent(extendedContainer.transform);
-        var opt = go.GetComponent<DefaultOptions>();
         int index;
-        opt.layer = map.getLayerById(selectedId, out index);
-        opt.menu = this;
+        var layer = map.getLayerById(selectedId, out index);
+        if (layer != null)
+        {
+            if (layer is GISlayerOSMXML)
+            {
+                var ob = Resources.Load("Prefabs/XMLoptions", typeof(GameObject));
+                GameObject go = (GameObject)Instantiate(ob, extendedContainer.transform.position, extendedContainer.transform.rotation);
+                go.transform.SetParent(extendedContainer.transform);
+                var opt = go.GetComponent<XMLoptions>();
+                opt.layer = (GISlayerOSMXML)layer;
+                opt.menu = this;
+            } else
+            {
+                var ob = Resources.Load("Prefabs/defaultOptions", typeof(GameObject));
+                GameObject go = (GameObject)Instantiate(ob, extendedContainer.transform.position, extendedContainer.transform.rotation);
+                go.transform.SetParent(extendedContainer.transform);
+                var opt = go.GetComponent<DefaultOptions>();
+                opt.layer = layer;
+                opt.menu = this;
+            }           
+        }        
     }
 
     void clearExtendedOptions()

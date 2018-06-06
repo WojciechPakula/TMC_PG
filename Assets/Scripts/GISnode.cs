@@ -21,7 +21,8 @@ public class GISnode
             //result.y = System.Math.Log(System.Math.Tan((_latlon.y + 90d) / 360d * System.Math.PI)) / System.Math.PI * 180d;
             //result.x = _latlon.x;
 
-            _XY = GISparser.LatLonToWeb(_latlon,0);
+            //_XY = GISparser.LatLonToWeb(_latlon,0);
+            _XY = GISlayer.LatLonToUnitary(_latlon);
         }
     }
     public Vector2d XY {
@@ -36,7 +37,8 @@ public class GISnode
             //result.y = System.Math.Atan(System.Math.Exp(_XY.y / 180d * System.Math.PI)) / System.Math.PI * 360d - 90d;
             //result.x = _XY.x;
 
-            _latlon = GISparser.WebToLatLon(_XY, 0);
+            //_latlon = GISparser.WebToLatLon(_XY, 0);
+            _latlon = GISlayer.UnitaryToLatLon(_XY);
         }
     }
     public Dictionary<string, string> tags { get; set; }

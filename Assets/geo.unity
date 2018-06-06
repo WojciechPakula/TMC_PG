@@ -2867,6 +2867,8 @@ MonoBehaviour:
       m_Image: {fileID: 0}
     - m_Text: Bing
       m_Image: {fileID: 0}
+    - m_Text: OSMXML
+      m_Image: {fileID: 0}
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
