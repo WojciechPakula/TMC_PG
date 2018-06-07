@@ -882,9 +882,9 @@ MonoBehaviour:
   m_Value: 0
   m_Options:
     m_Options:
-    - m_Text: Min
+    - m_Text: MAX
       m_Image: {fileID: 0}
-    - m_Text: Max
+    - m_Text: MIN
       m_Image: {fileID: 0}
   m_OnValueChanged:
     m_PersistentCalls:
@@ -1363,7 +1363,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: A
+  m_Text: 
 --- !u!114 &114330324672797908
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -2349,7 +2349,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Min
+  m_Text: MAX
 --- !u!114 &114852996261947068
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -3493,8 +3493,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -170.5, y: -35}
-  m_SizeDelta: {x: 160, y: 30}
+  m_AnchoredPosition: {x: -116.4, y: -35}
+  m_SizeDelta: {x: 51.7, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!224 &224693157204297338
 RectTransform:

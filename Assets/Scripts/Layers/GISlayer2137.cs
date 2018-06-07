@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using UnityEditor;
 using UnityEngine;
 
 public class GISlayer2137 : GISlayer

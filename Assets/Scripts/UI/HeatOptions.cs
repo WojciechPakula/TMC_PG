@@ -18,6 +18,15 @@ public class HeatOptions : MonoBehaviour {
     void Start()
     {
         sliderOpacity.value = layer.getOpacity();
+        if (layer != null && layer.dostepneNazwy != null)
+        {
+            foreach (var ele in layer.dostepneNazwy)
+            {
+                Dropdown.OptionData od = new Dropdown.OptionData(ele.Value);
+                dropDown.options.Add(od);
+            }
+            toggle.isOn = layer.isHeatActivated;
+        }
     }
 
     // Update is called once per frame
@@ -31,7 +40,7 @@ public class HeatOptions : MonoBehaviour {
 
         if (toggle.isOn != activation)
         {
-            if (toggle == true)
+            if (toggle.isOn == true)
             {
                 layer.setHeatActivated();
             } else
@@ -40,6 +49,7 @@ public class HeatOptions : MonoBehaviour {
             }
             activation = toggle.isOn;
         }
+        tekstZadaniowy.text = layer.zadTekst;
         //= toggle.isOn
     }
 
@@ -62,6 +72,6 @@ public class HeatOptions : MonoBehaviour {
 
         layer.addAbility(wybrane, rodzaj);
 
-        tekstZadaniowy.text += minmax.captionText.text +", "+ wybrane;
+        layer.zadTekst += minmax.captionText.text +", "+ wybrane+"\n";
     }
 }

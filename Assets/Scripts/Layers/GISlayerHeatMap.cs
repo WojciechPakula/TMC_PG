@@ -7,7 +7,8 @@ public class GISlayerHeatMap : GISlayer {
 
     GISdata gisdata = null;
     List<GISnode> uzytecznePunkty;
-    public Dictionary<string, string> dostepneNazwy;
+    public Dictionary<string, string> dostepneNazwy = null;
+    public string zadTekst = "";
 
     private Dictionary<Vector3Int, float[]> heatCache = new Dictionary<Vector3Int, float[]>();
 

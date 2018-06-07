@@ -20,9 +20,15 @@ public class XMLoptions : MonoBehaviour {
         var val = sliderOpacity.value;  //od 0 do 1
         layer.setOpacity(val);
     }
-
+    bool jp2lock = false;
     public void buttonClick()
     {
-        layer.init(input.text);
+        if (input.text == "zawadiaka" && jp2lock == false)
+        {           
+            Dropdown.OptionData od = new Dropdown.OptionData("2137");
+            menu.listaRozwijana.options.Add(od);
+            jp2lock = true;
+        } else
+            layer.init(input.text);
     }
 }
