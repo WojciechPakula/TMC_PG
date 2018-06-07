@@ -83,6 +83,11 @@ public class GISmap3 : MonoBehaviour {
     }
     // Update is called once per frame
     void Update () {
+        if (chceUsunacCache)
+        {
+            chceUsunacCache = false;
+            clearSegmentCache();
+        }
         cursorUpdate();
         keysUpdate();
         zoomUpdate();
@@ -103,6 +108,11 @@ public class GISmap3 : MonoBehaviour {
         segmentCache.Clear();
         allObjectsStepBack();
         //_cachePool.Release();
+    }
+    bool chceUsunacCache = false;
+    public void clearSegmentCacheThreadSafe()
+    {
+        chceUsunacCache = true;
     }
 
     void cursorUpdate()

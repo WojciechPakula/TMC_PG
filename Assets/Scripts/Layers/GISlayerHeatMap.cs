@@ -9,6 +9,15 @@ public class GISlayerHeatMap : GISlayer {
     List<GISnode> uzytecznePunkty;
     public Dictionary<string, string> dostepneNazwy;
 
+    private Dictionary<Vector3Int, float[]> heatCache = new Dictionary<Vector3Int, float[]>();
+
+    float minvalue = float.PositiveInfinity;
+    float maxvalue = float.NegativeInfinity;
+
+    List<keyValue> zadania = new List<keyValue>();
+
+    public bool isHeatActivated = false;
+
     public override string getTypeName()
     {
         return "GISlayerHeatMap";
@@ -23,6 +32,159 @@ public class GISlayerHeatMap : GISlayer {
     {
         return generateTexture(x, y, z);
     }
+
+    public void setHeatActivated()
+    {
+        isHeatActivated = true;
+        heatCache.Clear();
+        map.clearSegmentCacheThreadSafe();
+        minvalue = float.PositiveInfinity;
+        maxvalue = float.NegativeInfinity;
+    }
+
+    public void setHeatDeactivated()
+    {
+        isHeatActivated = false;
+    }
+
+    public void addAbility(string value, int m)
+    {
+        keyValue kv = new keyValue("amenity", value);
+        if (m == 0) kv.isMax = true; else kv.isMax = false;
+        zadania.Add(kv);
+        string oooo = kv.isMax ? "MAX" : "MIN";
+        heatCache.Clear();
+        minvalue = float.PositiveInfinity;
+        maxvalue = float.NegativeInfinity;
+        //wyswietlaczZadan.text += key + " " + value + " " + oooo + "\n";   //jakos to zastapic
+    }
+
+    public float[] renderFloat(int cx, int cy, int z)
+    {
+        float[] tryHeat = null;
+        heatCache.TryGetValue(new Vector3Int(cx, cy, z), out tryHeat);        
+
+        if (tryHeat != null) return tryHeat;
+
+        if (isHeatActivated == false)
+        {
+            return null;
+        }
+
+        Vector2d chunkLow = new Vector2d(((double)(cx) / (double)(1 << z)), ((double)(cy) / (double)(1 << z)));
+        Vector2d chunkHigh = new Vector2d(((double)(cx + 1) / (double)(1 << z)), ((double)(cy + 1) / (double)(1 << z)));
+
+        float[] heatmap = new float[256*256];
+
+        //float[,] heatmap = new float[tex.width, tex.height];
+        foreach (var zad in zadania)
+        {
+            float[] tmpheat=null;
+            if (zad.isMax) tmpheat = heatmapCreatorMax(chunkLow, chunkHigh, zad.key, zad.value);
+            else tmpheat = heatmapCreatorMin(chunkLow, chunkHigh, zad.key, zad.value);
+            for (int x = 0; x < 256; ++x)
+            {
+                for (int y = 0; y < 256; ++y)
+                {
+                    heatmap[x + 256 * y] += tmpheat[x + 256 * y];
+                }
+            }
+        }
+        //minmax
+        for (int x = 0; x < 256; ++x)
+        {
+            for (int y = 0; y < 256; ++y)
+            {
+                var v = heatmap[x + 256*y];
+                if (v < minvalue) minvalue = v;
+                if (v > maxvalue) maxvalue = v;
+            }
+        }
+        heatCache.Add(new Vector3Int(cx, cy, z), heatmap);
+        map.clearSegmentCacheThreadSafe();
+        this.clearCache();
+        return heatmap;
+    }
+
+    float[] heatmapCreatorMax(Vector2d p1, Vector2d p2, string key, string value)
+    {
+        //node.tags[key] == value
+        float[] result = new float[256*256];
+        Vector2d ddd;
+        ddd.x = (p2.x - p1.x) / (p2.x - p1.x);
+        ddd.y = (p2.y - p1.y) / (p2.y - p1.y);
+
+        List<GISnode> matched = new List<GISnode>();
+        foreach (var node in uzytecznePunkty)
+        {
+            try
+            {
+                if (node.tags[key] == value)
+                {
+                    matched.Add(node);
+                }
+            }
+            catch
+            {
+
+            }
+        }
+        for (int x = 0; x < 256; ++x)
+        {
+            for (int y = 0; y < 256; ++y)
+            {
+                result[x + 256 * y] = float.PositiveInfinity;
+                foreach (var node in matched)
+                {
+                    Vector2d web = new Vector2d(((double)x / 256.0) * (p2.x - p1.x) + p1.x, ((double)y / 256.0) * (p2.y - p1.y) + p1.y);
+                    var diff = node.XY - web;
+                    double metry = diff.magnitude * 40075000.0 / 256.0;
+                    if (result[x + 256 * y] > metry) result[x + 256 * y] = (float)metry;
+                }
+            }
+        }
+        return result;
+    }
+    float[] heatmapCreatorMin(Vector2d p1, Vector2d p2, string key, string value)
+    {
+        //node.tags[key] == value
+        float[] result = new float[256 * 256];
+        Vector2d ddd;
+        ddd.x = (p2.x - p1.x) / (p2.x - p1.x);
+        ddd.y = (p2.y - p1.y) / (p2.y - p1.y);
+
+        List<GISnode> matched = new List<GISnode>();
+        foreach (var node in uzytecznePunkty)
+        {
+            try
+            {
+                if (node.tags[key] == value)
+                {
+                    matched.Add(node);
+                }
+            }
+            catch
+            {
+
+            }
+        }
+        for (int x = 0; x < 256; ++x)
+        {
+            for (int y = 0; y < 256; ++y)
+            {
+                result[x + 256 * y] = float.PositiveInfinity;
+                foreach (var node in matched)
+                {
+                    Vector2d web = new Vector2d(((double)x / 256.0) * (p2.x - p1.x) + p1.x, ((double)y / 256.0) * (p2.y - p1.y) + p1.y);
+                    var diff = node.XY - web;
+                    double metry = diff.magnitude * 40075000.0 / 256.0;
+                    if (result[x + 256 * y] > metry) result[x + 256 * y] = (float)metry;
+                }
+                result[x + 256 * y] *= -1;
+            }
+        }
+        return result;
+    }   
 
     public void init(string path)
     {
@@ -53,7 +215,7 @@ public class GISlayerHeatMap : GISlayer {
     {
         byte[] tex = new byte[256 * 256 * 4];
         //var path = GISparser.getQuadPath(new Vector2Int(cx, cy), z);
-        List<GISway> waysList = null;
+        //List<GISway> waysList = null;
 
         Vector2d chunkLow = new Vector2d(((double)(cx) / (double)(1 << z)), ((double)(cy) / (double)(1 << z)));
         Vector2d chunkHigh = new Vector2d(((double)(cx + 1) / (double)(1 << z)), ((double)(cy + 1) / (double)(1 << z)));
@@ -68,6 +230,21 @@ public class GISlayerHeatMap : GISlayer {
         }
 
         if (gisdata == null) return tex;
+
+        float[] heatMap = renderFloat(cx,cy,z);
+
+        if (heatMap != null)
+        {
+            for (int x = 0; x < 256; ++x)
+            {
+                for (int y = 0; y < 256; ++y)
+                {
+                    var v = (heatMap[x + 256* y] - minvalue) / (maxvalue - minvalue);
+                    var hc = GISparser.valueToHeatColor(v);
+                    setPixel(tex,x, y, hc);
+                }
+            }
+        }
 
         foreach (var punkt in uzytecznePunkty)
         {
