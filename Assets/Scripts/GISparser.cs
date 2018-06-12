@@ -9,7 +9,7 @@ using System.Xml.Serialization;
 using UnityEngine;
 
 public static class GISparser {
-    public static string webImagesPath = @"c:\tmp\";
+    public static string webImagesPath = @"tmpCache\";
 
     public static GISdata LoadOSM(string path)
     {        

@@ -72,15 +72,22 @@ public class GISmap3 : MonoBehaviour {
         startThread();
 
         //tu sa testy ktore musze usunac
-        Debug.Log("Init webtest");
+        //Debug.Log("Init webtest");
 
         //var osmtest = new GISlayerOSM();
         //osmtest.renderSegment(0,0,1);
 
-        Debug.Log("Init zakonczony");
+        //Debug.Log("Init zakonczony");
         //Bitmap bmp = new Bitmap(@"c:\tmp\BING.1.0.0.png");
-        Debug.Log("Init zakonczony bardziej");
+        //Debug.Log("Init zakonczony bardziej");
+        stworzFolder(GISparser.webImagesPath);
     }
+
+    void stworzFolder(string path)
+    {
+        DirectoryInfo di = Directory.CreateDirectory(path);
+    }
+
     // Update is called once per frame
     void Update () {
         if (chceUsunacCache)
